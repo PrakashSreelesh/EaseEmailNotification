@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Settings - EmailEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body class="bg-[#F3F6F9] min-h-screen flex text-[#3F4254]">
+    <aside id="sidebar-nav"></aside>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <header
+            class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-10 sticky top-0 z-10">
+            <div>
+                <nav class="flex text-sm text-gray-500 mb-1">
+                    <ol class="flex items-center space-x-2">
+                        <li><a href="/dashboard" class="hover:text-orange-500">Admin</a></li>
+                        <li><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg></li>
+                        <li class="text-gray-900 font-bold">Settings</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right mr-4">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Logged in as
+                    </p>
+                    <p class="text-sm font-bold text-gray-800 top-bar-email">super@easeemail.com</p>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold border border-orange-200">
+                    S</div>
+            </div>
+        </header>
+
+        <div class="p-10">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-[#181C32] mb-2">Settings</h2>
+                <p class="text-[#B5B5C3] font-medium">Manage your account settings and preferences</p>
+            </div>
+
+            <!-- Settings Tabs -->
+            <div class="flex items-center space-x-12 border-b border-gray-200 mb-10 overflow-x-auto">
+                <button id="tab-account" onclick="switchTab('account')"
+                    class="tab-btn pb-4 text-sm font-extrabold text-[#FF7000] border-b-2 border-[#FF7000] whitespace-nowrap flex items-center transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Account Settings
+                </button>
+                <button id="tab-notifications" onclick="switchTab('notifications')"
+                    class="tab-btn pb-4 text-sm font-bold text-gray-400 hover:text-gray-600 border-b-2 border-transparent whitespace-nowrap flex items-center transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                        </path>
+                    </svg>
+                    Notifications
+                </button>
+                <button id="tab-security" onclick="switchTab('security')"
+                    class="tab-btn pb-4 text-sm font-bold text-gray-400 hover:text-gray-600 border-b-2 border-transparent whitespace-nowrap flex items-center transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 21.241a11.954 11.954 0 01-9.618-13.257A11.956 11.956 0 0112 2.181a11.956 11.956 0 019.618 5.764z">
+                        </path>
+                    </svg>
+                    Security
+                </button>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
+                <!-- Account Settings Pane -->
+                <div id="pane-account" class="settings-pane">
+                    <div class="p-10 border-b border-gray-100">
+                        <h3 class="text-xl font-extrabold text-[#181C32]">Profile Information</h3>
+                    </div>
+                    <form class="p-10 space-y-8 max-w-3xl">
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Email
+                                Address</label>
+                            <input type="email" id="settingsEmail" disabled
+                                class="w-full bg-[#F3F6F9] border-transparent rounded-xl px-5 py-3 text-gray-500 font-bold outline-none cursor-not-allowed">
+                            <p class="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-tighter">Your email
+                                cannot be changed. Contact support for email changes.</p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Full
+                                Name</label>
+                            <input type="text" id="settingsName" value="Super Admin"
+                                class="input-field w-full font-bold">
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Company
+                                Name</label>
+                            <input type="text" value="My Company" class="input-field w-full font-bold">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Timezone</label>
+                                <select class="input-field w-full appearance-none font-bold">
+                                    <option>UTC</option>
+                                    <option>GMT-5</option>
+                                    <option>GMT+1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Language</label>
+                                <select class="input-field w-full appearance-none font-bold">
+                                    <option>English</option>
+                                    <option>Spanish</option>
+                                    <option>French</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="pt-8 flex">
+                            <button type="submit"
+                                class="bg-[#43428E] hover:bg-[#353470] text-white font-black py-4 px-12 rounded-xl shadow-xl transition-all flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                                    </path>
+                                </svg>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Notifications Pane -->
+                <div id="pane-notifications" class="settings-pane hidden">
+                    <div class="p-10 border-b border-gray-100">
+                        <h3 class="text-xl font-extrabold text-[#181C32]">Email Notifications</h3>
+                        <p class="text-xs text-gray-400 font-medium mt-1">Control which system events trigger email
+                            alerts to your account.</p>
+                    </div>
+                    <form class="p-10 space-y-10 max-w-3xl">
+                        <div class="space-y-6">
+                            <div
+                                class="flex items-center justify-between p-6 bg-[#F9FAFB] rounded-2xl border border-gray-100 group hover:border-orange-200 transition-all">
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 mb-1">Delivery Success Alerts</h4>
+                                    <p class="text-[11px] text-gray-500 font-medium">Receive an email for every
+                                        successfully delivered campaign.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF7000]">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-6 bg-[#F9FAFB] rounded-2xl border border-gray-100 group hover:border-orange-200 transition-all">
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 mb-1">Bounce & Failure Reports</h4>
+                                    <p class="text-[11px] text-gray-500 font-medium">Critical alerts when an email fails
+                                        to reach its recipient.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF7000]">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-6 bg-[#F9FAFB] rounded-2xl border border-gray-100 group hover:border-orange-200 transition-all">
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 mb-1">Security Alerts</h4>
+                                    <p class="text-[11px] text-gray-500 font-medium">Get notified of new logins and
+                                        password changes.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF7000]">
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="pt-4">
+                            <button type="submit"
+                                class="bg-[#43428E] hover:bg-[#353470] text-white font-black py-4 px-12 rounded-xl shadow-xl transition-all">Update
+                                Preferences</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security Pane -->
+                <div id="pane-security" class="settings-pane hidden">
+                    <div class="p-10 border-b border-gray-100">
+                        <h3 class="text-xl font-extrabold text-[#181C32]">Security & Authentication</h3>
+                        <p class="text-xs text-gray-400 font-medium mt-1">Enhance your account security with password
+                            and 2FA settings.</p>
+                    </div>
+                    <form class="p-10 space-y-10 max-w-3xl">
+                        <div class="space-y-6">
+                            <div>
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Current
+                                    Password</label>
+                                <input type="password" placeholder="••••••••" class="input-field w-full">
+                            </div>
+                            <div class="grid grid-cols-2 gap-8">
+                                <div>
+                                    <label
+                                        class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">New
+                                        Password</label>
+                                    <input type="password" placeholder="••••••••" class="input-field w-full">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Confirm
+                                        New Password</label>
+                                    <input type="password" placeholder="••••••••" class="input-field w-full">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-red-50 rounded-2xl border border-red-100 flex items-start space-x-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-red-800 mb-1">Two-Factor Authentication</h4>
+                                <p class="text-xs text-red-600/70 font-medium leading-relaxed">2FA is currently <span
+                                        class="font-black underline">DISABLED</span>. We strongly recommend enabling it
+                                    to protect your email infrastructure.</p>
+                                <button type="button"
+                                    class="mt-4 text-xs font-black text-red-700 uppercase tracking-widest hover:underline">Enable
+                                    2FA Now →</button>
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit"
+                                class="bg-[#111111] hover:bg-black text-white font-black py-4 px-12 rounded-xl shadow-xl transition-all">Update
+                                Security</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/sidebar.js"></script>
+    <script>
+        function switchTab(tabId) {
+            // Hide all panes
+            document.querySelectorAll('.settings-pane').forEach(pane => pane.classList.add('hidden'));
+            // Remove active classes from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-[#FF7000]', 'border-[#FF7000]', 'font-extrabold');
+                btn.classList.add('text-gray-400', 'border-transparent', 'font-bold');
+            });
+
+            // Show target pane
+            document.getElementById(`pane-${tabId}`).classList.remove('hidden');
+            // Set active class on target button
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('text-[#FF7000]', 'border-[#FF7000]', 'font-extrabold');
+            activeBtn.classList.remove('text-gray-400', 'border-transparent', 'font-bold');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmail = localStorage.getItem('userEmail') || 'super@easeemail.com';
+            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userEmail);
+            document.getElementById('settingsEmail').value = userEmail;
+            document.getElementById('settingsName').value = userEmail.split('@')[0].toUpperCase();
+        });
+    </script>
+</body>
+
+
+</html>

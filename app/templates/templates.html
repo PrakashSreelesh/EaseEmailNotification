@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Email Templates - EmailEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body class="bg-[#F3F6F9] min-h-screen flex text-[#3F4254]">
+    <aside id="sidebar-nav"></aside>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <header
+            class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-10 sticky top-0 z-10">
+            <div>
+                <nav class="flex text-sm text-gray-500 mb-1">
+                    <ol class="flex items-center space-x-2">
+                        <li><a href="/dashboard" class="hover:text-orange-500">Admin</a></li>
+                        <li><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg></li>
+                        <li class="text-gray-900 font-bold">Email Templates</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right mr-4">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Logged in as
+                    </p>
+                    <p class="text-sm font-bold text-gray-800 top-bar-email">super@easeemail.com</p>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold border border-orange-200">
+                    S</div>
+            </div>
+        </header>
+
+        <div class="p-10">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-[#181C32] mb-2">Email Templates</h2>
+                    <p class="text-[#B5B5C3] font-medium">Create and manage your email templates with live preview</p>
+                </div>
+                <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+                    class="bg-[#43428E] hover:bg-[#353470] text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Template
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mb-10 relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input type="text" placeholder="Search templates by name or category..."
+                    class="w-full bg-white border border-gray-100 rounded-2xl pl-12 pr-4 py-4 text-gray-900 placeholder-gray-400 shadow-sm focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="templatesList">
+                <!-- Dynamic Content -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-12 flex items-center justify-between border-t border-gray-100 pt-8">
+                <p class="text-sm font-bold text-gray-400">Total <span class="text-gray-900" id="currentCount">0</span>
+                    templates</p>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPage" onclick="changePage(-1)" disabled
+                        class="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <span id="pageInfo" class="text-sm font-black text-[#181C32] px-4">Page 1</span>
+                    <button id="nextPage" onclick="changePage(1)" disabled
+                        class="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Template Sidebar/Panel (Instead of Modal for premium feel) -->
+        <div id="createModal" class="hidden fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+                onclick="this.parentElement.classList.add('hidden')"></div>
+            <div class="absolute inset-y-0 right-0 max-w-full flex">
+                <div class="w-screen max-w-2xl bg-white shadow-2xl flex flex-col">
+                    <div class="flex items-center justify-between p-8 border-b border-gray-100">
+                        <h3 class="text-2xl font-black text-[#181C32]" id="modalTitle">Create Template</h3>
+                        <button onclick="document.getElementById('createModal').classList.add('hidden')"
+                            class="text-gray-400 hover:text-gray-900 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="createForm" class="flex-1 overflow-y-auto p-8 space-y-8">
+                        <input type="hidden" name="id" id="editIdInput">
+                        <input type="hidden" name="tenant_id" id="tenantIdInput">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Template
+                                    Name *</label>
+                                <input type="text" name="name" placeholder="e.g., Welcome Email" required
+                                    class="input-field w-full">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Category</label>
+                                <select name="category" class="input-field w-full appearance-none">
+                                    <option value="General">General</option>
+                                    <option value="Onboarding">Onboarding</option>
+                                    <option value="Security">Security</option>
+                                    <option value="Commerce">Commerce</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Subject
+                                Line *</label>
+                            <input type="text" name="subject_template"
+                                placeholder="e.g., Welcome {% raw %}{{firstName}}{% endraw %}!" required
+                                class="input-field w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label
+                                    class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider">HTML
+                                    Content *</label>
+                                <button type="button"
+                                    class="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Toggle Code
+                                    Editor</button>
+                            </div>
+                            <textarea name="body_template" rows="10" placeholder="<h1>Untitled Template</h1>" required
+                                class="input-field w-full font-mono text-xs leading-relaxed"></textarea>
+                            <p class="text-[10px] text-gray-400 font-bold mt-2 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                                USE {% raw %}{{VAR_NAME}}{% endraw %} SYNTAX FOR DYNAMIC CONTENT
+                            </p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Sample
+                                Variables Data (JSON) *</label>
+                            <textarea name="sample_data" rows="5" id="variablesJson"
+                                placeholder='{ "name": "John Doe" }'
+                                class="input-field w-full font-mono text-xs leading-relaxed"></textarea>
+                            <p class="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-tighter">Enter sample
+                                data for variables detected in subject and body</p>
+                        </div>
+
+                        <div class="space-y-4 pt-4">
+                            <h4 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest">Live Preview
+                            </h4>
+                            <div id="livePreview"
+                                class="bg-[#F3F6F9] rounded-2xl p-6 min-h-[200px] border border-gray-100 overflow-y-auto text-sm">
+                                <p class="text-gray-300 font-bold italic text-center py-20">Render preview will appear
+                                    here...</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-8 border-t border-gray-100 flex space-x-4">
+                            <button type="submit"
+                                class="flex-1 bg-[#43428E] hover:bg-[#353470] text-white font-bold py-4 rounded-xl shadow-xl transition-all">Create
+                                Template</button>
+                            <button type="button"
+                                onclick="document.getElementById('createModal').classList.add('hidden')"
+                                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 rounded-xl transition-all">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div id="previewModal" class="hidden fixed inset-0 z-50 overflow-hidden">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+                onclick="this.parentElement.classList.add('hidden')"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+                <div
+                    class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between p-8 border-b border-gray-100">
+                        <div>
+                            <h3 class="text-2xl font-black text-[#181C32]" id="previewName">Template Preview</h3>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1"
+                                id="previewSubject"></p>
+                        </div>
+                        <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                            class="text-gray-400 hover:text-gray-900 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-8 bg-[#F3F6F9] space-y-8">
+                        <div class="bg-white rounded-2xl shadow-sm p-10 min-h-[400px]" id="previewFrame">
+                            <!-- Template Content Here -->
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm p-8 border border-orange-100">
+                            <h4 class="text-sm font-black text-[#181C32] mb-6 flex items-center">
+                                <span
+                                    class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center mr-3 text-xs">🚀</span>
+                                Send Test Email
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label
+                                        class="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Recipient
+                                        Email</label>
+                                    <input type="email" id="testRecipient" placeholder="recipient@example.com"
+                                        class="input-field w-full text-sm">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">SMTP
+                                        Account</label>
+                                    <select id="testSmtpSelect" class="input-field w-full text-sm appearance-none">
+                                        <option value="">Select SMTP Account</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button onclick="sendTestEmail()" id="testSendBtn"
+                                class="mt-6 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                Send Test Email
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-8 border-t border-gray-100 flex justify-end bg-white">
+                        <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 px-8 rounded-xl transition-all">Close
+                            Preview</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/sidebar.js"></script>
+    <script>
+        let currentPage = 0;
+        const pageSize = 30;
+        let currentTemplateData = null;
+
+        async function fetchTemplates() {
+            try {
+                const response = await fetch(`/api/v1/templates?skip=${currentPage * pageSize}&limit=${pageSize}`);
+                const templates = await response.json();
+                const list = document.getElementById('templatesList');
+                list.innerHTML = '';
+
+                document.getElementById('currentCount').textContent = templates.length;
+                document.getElementById('pageInfo').textContent = `Page ${currentPage + 1}`;
+                document.getElementById('prevPage').disabled = currentPage === 0;
+                document.getElementById('nextPage').disabled = templates.length < pageSize;
+
+                if (templates.length > 0) {
+                    document.getElementById('tenantIdInput').value = templates[0].tenant_id;
+                }
+
+                if (templates.length === 0) {
+                    list.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400 font-bold">No templates found. Start by creating one!</div>';
+                    return;
+                }
+
+                templates.forEach(t => {
+                    const card = `
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 transition-all hover:shadow-xl hover:-translate-y-1 group">
+                        <div class="flex items-start justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-extrabold text-[#181C32] mb-2 group-hover:text-orange-500 transition-colors">${t.name}</h3>
+                                <span class="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 bg-blue-50 text-blue-600 rounded-full">General</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-8">
+                            <div>
+                                <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1">Subject</p>
+                                <p class="text-sm font-bold text-gray-600 truncate">${t.subject_template}</p>
+                            </div>
+                            <div class="flex items-center space-x-12">
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1">Created</p>
+                                    <p class="text-xs font-bold text-gray-800">${new Date(t.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3 pt-6 border-t border-gray-50">
+                            <button onclick="editTemplate('${t.id}')" class="flex-1 bg-gray-50 hover:bg-gray-100 text-[#3F4254] font-bold py-3 rounded-xl text-xs transition-all flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Edit
+                            </button>
+                            <button onclick="previewTemplate('${t.id}')" class="w-12 h-12 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            </button>
+                            <button onclick="deleteTemplate('${t.id}')" class="w-12 h-12 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                    list.innerHTML += card;
+                });
+
+            } catch (error) { console.error(error); }
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            fetchTemplates();
+        }
+
+        async function deleteTemplate(id) {
+            if (!confirm('Are you sure you want to delete this template?')) return;
+            try {
+                const response = await fetch(`/api/v1/templates/${id}`, { method: 'DELETE' });
+                if (response.ok) fetchTemplates();
+                else alert('Failed to delete template');
+            } catch (e) { console.error(e); }
+        }
+
+        async function editTemplate(id) {
+            try {
+                const response = await fetch(`/api/v1/templates/${id}`);
+                const t = await response.json();
+                const form = document.getElementById('createForm');
+
+                document.getElementById('modalTitle').textContent = 'Edit Template';
+                document.getElementById('editIdInput').value = t.id;
+                form.elements['name'].value = t.name;
+                form.elements['subject_template'].value = t.subject_template;
+                form.elements['body_template'].value = t.body_template;
+                form.elements['category'].value = 'General'; // Default for now
+
+                if (t.sample_data) {
+                    document.getElementById('variablesJson').value = JSON.stringify(t.sample_data, null, 2);
+                }
+
+                document.getElementById('livePreview').innerHTML = t.body_template;
+                document.getElementById('createModal').classList.remove('hidden');
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchSmtpForTest() {
+            try {
+                const userRole = localStorage.getItem('userRole') || 'viewer';
+                const tenantId = "ad518e7a-86d8-4297-a0e3-5eac5809f9ec"; // Current tenant
+
+                let url = '/api/v1/smtp-accounts';
+                if (userRole !== 'super_admin') {
+                    url += `?tenant_id=${tenantId}`;
+                }
+
+                const response = await fetch(url);
+                const smtps = await response.json();
+                const select = document.getElementById('testSmtpSelect');
+                select.innerHTML = '<option value="">Select SMTP Account</option>';
+                smtps.forEach(s => {
+                    const opt = new Option(`${s.name || s.host} (${s.username})`, s.id);
+                    select.add(opt);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function sendTestEmail() {
+            const recipient = document.getElementById('testRecipient').value;
+            const smtpId = document.getElementById('testSmtpSelect').value;
+            const previewName = document.getElementById('previewName').textContent;
+
+            if (!recipient || !smtpId) {
+                alert('Please enter recipient email and select SMTP account');
+                return;
+            }
+
+            const btn = document.getElementById('testSendBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...';
+
+            try {
+                // Determine which data to use: form data (if editing) or currentTemplateData (if previewing from list)
+                const isFormOpen = !document.getElementById('createModal').classList.contains('hidden');
+                const subject = isFormOpen ? document.querySelector('input[name="subject_template"]').value : currentTemplateData.subject_template;
+                const body = isFormOpen ? document.querySelector('textarea[name="body_template"]').value : currentTemplateData.body_template;
+                const sampleData = JSON.parse(document.getElementById('variablesJson').value || '{}');
+
+                const response = await fetch('/api/v1/templates/test-send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient: recipient,
+                        smtp_id: smtpId,
+                        subject_template: subject,
+                        body_template: body,
+                        sample_data: sampleData
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Test email sent successfully!');
+                } else {
+                    const error = await response.json();
+                    alert('Failed to send test email: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error sending test email');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function previewTemplate(id) {
+            try {
+                const response = await fetch(`/api/v1/templates/${id}`);
+                const template = await response.json();
+                currentTemplateData = template;
+
+                document.getElementById('previewName').textContent = template.name;
+                document.getElementById('previewSubject').textContent = `Subject: ${template.subject_template}`;
+                document.getElementById('previewFrame').innerHTML = template.body_template;
+
+                // Show sample data in the variables field when previewing if it exists
+                if (template.sample_data) {
+                    document.getElementById('variablesJson').value = JSON.stringify(template.sample_data, null, 2);
+                }
+
+                await fetchSmtpForTest();
+                document.getElementById('previewModal').classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+                alert('Failed to load template preview');
+            }
+        }
+
+        // Live Preview & Variable Detection Logic
+        const bodyInput = document.querySelector('textarea[name="body_template"]');
+        const subjectInput = document.querySelector('input[name="subject_template"]');
+        const previewDiv = document.getElementById('livePreview');
+        const variablesJson = document.getElementById('variablesJson');
+
+        function detectVariables() {
+            const content = bodyInput.value + " " + subjectInput.value;
+            const regex = {% raw %} /{{\s*([\w.]+)\s*}}/g{% endraw %};
+        let match;
+        const detected = [];
+        while ((match = regex.exec(content)) !== null) {
+            if (!detected.includes(match[1])) {
+                detected.push(match[1]);
+            }
+        }
+
+        let currentJson = {};
+        try {
+            currentJson = JSON.parse(variablesJson.value || '{}');
+        } catch (e) { }
+
+        const newJson = {};
+        detected.forEach(v => {
+            newJson[v] = currentJson[v] || `sample_${v}`;
+        });
+
+        // Specific sample data if they match user requested keys
+        if (newJson.hasOwnProperty('name')) newJson.name = "Sreelesh";
+        if (newJson.hasOwnProperty('email')) newJson.email = "abcd@gmail.com";
+        if (newJson.hasOwnProperty('company')) newJson.company = "Tecnots";
+        if (newJson.hasOwnProperty('date')) newJson.date = "09-02-2026";
+
+        if (Object.keys(newJson).length > 0 || variablesJson.value === "") {
+            variablesJson.value = JSON.stringify(newJson, null, 2);
+        }
+        }
+
+        bodyInput.addEventListener('input', (e) => {
+            const content = e.target.value;
+            if (content.trim()) {
+                previewDiv.innerHTML = content;
+            } else {
+                previewDiv.innerHTML = '<p class="text-gray-300 font-bold italic text-center py-20">Render preview will appear here...</p>';
+            }
+            detectVariables();
+        });
+
+        subjectInput.addEventListener('input', detectVariables);
+
+        document.getElementById('createForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            if (!data.tenant_id) data.tenant_id = "ad518e7a-86d8-4297-a0e3-5eac5809f9ec";
+
+            try {
+                data.sample_data = JSON.parse(data.sample_data || '{}');
+            } catch (e) {
+                alert('Invalid JSON in Sample Variables Data');
+                return;
+            }
+
+            const isEdit = !!data.id;
+            const url = isEdit ? `/api/v1/templates/${data.id}` : '/api/v1/templates';
+            const method = isEdit ? 'PATCH' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    document.getElementById('createModal').classList.add('hidden');
+                    fetchTemplates();
+                    e.target.reset();
+                    document.getElementById('editIdInput').value = '';
+                    document.getElementById('modalTitle').textContent = 'Create Template';
+                } else {
+                    alert('Failed to save template');
+                }
+            } catch (error) { console.error(error); }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmail = localStorage.getItem('userEmail') || 'super@easeemail.com';
+            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userEmail);
+            fetchTemplates();
+        });
+    </script>
+</body>
+
+</html>

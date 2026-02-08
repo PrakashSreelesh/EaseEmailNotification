@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Management - EmailEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body class="bg-[#F3F6F9] min-h-screen flex text-[#3F4254]">
+    <aside id="sidebar-nav"></aside>
+
+    <script>
+        // Security check before rendering
+        const userRole = localStorage.getItem('userRole');
+        const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true' || userRole === 'super_admin';
+        const isAdmin = localStorage.getItem('isAdmin') === 'true' || userRole === 'admin';
+
+        if (!isSuperAdmin && !isAdmin) {
+            console.warn('Access denied: User is not an admin. Redirecting to dashboard.');
+            window.location.href = '/dashboard';
+        }
+    </script>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <header
+            class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-10 sticky top-0 z-10">
+            <div>
+                <nav class="flex text-sm text-gray-500 mb-1">
+                    <ol class="flex items-center space-x-2">
+                        <li><a href="/dashboard" class="hover:text-orange-500">Admin</a></li>
+                        <li><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg></li>
+                        <li class="text-gray-900 font-bold">User Management</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right mr-4">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Logged in as
+                    </p>
+                    <p class="text-sm font-bold text-gray-800 top-bar-email">super@easeemail.com</p>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold border border-orange-200">
+                    S</div>
+            </div>
+        </header>
+
+        <div class="p-10">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-[#181C32] mb-2">User Management</h2>
+                    <p class="text-[#B5B5C3] font-medium">Manage standard user accounts (Super Admin accounts excluded)
+                    </p>
+                </div>
+                <button id="addUserBtn" onclick="document.getElementById('createModal').classList.remove('hidden')"
+                    class="hidden bg-[#43428E] hover:bg-[#353470] text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    + Invite User
+                </button>
+            </div>
+
+            <!-- User Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                <div
+                    class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Total Users
+                        </p>
+                        <h4 class="text-3xl font-black text-[#181C32]" id="totalUsersStat">0</h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Active</p>
+                        <h4 class="text-3xl font-black text-[#181C32]" id="activeUsersStat">0</h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12.123v.973a2.335 2.335 0 01-.634 1.597l-1.141 1.141a.683.683 0 00.965.965l1.141-1.141a3.702 3.702 0 001.007-2.538v-.973m5.414-5.414L12 9l-1.414-1.414m0 0L9 6.172m1.414 1.414l1.414-1.414M12 9l1.414 1.414M12 9l-1.414 1.414m0 0l-1.414-1.414M12 9l1.414-1.414">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div
+                    class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Inactive</p>
+                        <h4 class="text-3xl font-black text-[#181C32]" id="inactiveUsersStat">0</h4>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mb-10 relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input type="text" placeholder="Search by email or name..."
+                    class="w-full bg-white border border-gray-100 rounded-2xl pl-12 pr-4 py-4 text-gray-900 shadow-sm focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm">
+            </div>
+
+            <!-- Invite User Section (Screenshot 12 style) -->
+            <div id="createModal"
+                class="hidden mb-12 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top duration-300">
+                <div class="p-8 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="text-xl font-extrabold text-[#181C32]" id="modalTitle">Invite User</h3>
+                    <button onclick="document.getElementById('createModal').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-900 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <form id="createForm" class="p-8 space-y-6">
+                    <input type="hidden" name="id" id="editIdInput">
+                    <input type="hidden" name="tenant_id" id="tenantIdInput">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Email
+                                Address *</label>
+                            <input type="email" name="email" placeholder="user@example.com" required
+                                class="input-field w-full">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Full
+                                Name *</label>
+                            <input type="text" name="full_name" placeholder="John Doe" required
+                                class="input-field w-full">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Role</label>
+                            <select name="role" class="input-field w-full appearance-none">
+                                <option value="admin">Admin</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Status</label>
+                            <select name="status" class="input-field w-full appearance-none">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div id="tenantIdField">
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Temporary
+                                Password *</label>
+                            <input type="password" name="password" placeholder="••••••••" required
+                                class="input-field w-full">
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-gray-100 flex space-x-4">
+                        <button type="submit" id="submitBtn"
+                            class="bg-[#43428E] hover:bg-[#353470] text-white font-bold py-3.5 px-10 rounded-xl shadow-lg transition-all flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            <span id="submitBtnText">Invite User</span>
+                        </button>
+                        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3.5 px-8 rounded-xl transition-all">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="usersList">
+                <!-- Dynamic Content -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-12 flex items-center justify-between border-t border-gray-100 pt-8">
+                <p class="text-sm font-bold text-gray-400">Total <span class="text-gray-900" id="currentCount">0</span>
+                    users this page</p>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPage" onclick="changePage(-1)" disabled
+                        class="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <span id="pageInfo" class="text-sm font-black text-[#181C32] px-4">Page 1</span>
+                    <button id="nextPage" onclick="changePage(1)" disabled
+                        class="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 disabled:opacity-50 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/sidebar.js"></script>
+    <script>
+        let currentPage = 0;
+        const pageSize = 30;
+
+        async function fetchUsers() {
+            const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+            const userEmail = localStorage.getItem('userEmail');
+
+            try {
+                // 1. Get current user data to obtain their tenant_id
+                const meRes = await fetch(`/api/v1/users/me?email=${userEmail}`);
+                const me = await meRes.json();
+                const myTenantId = me.tenant_id;
+
+                // 2. Fetch users with role context
+                const url = `/api/v1/users?skip=${currentPage * pageSize}&limit=${pageSize}&is_superadmin=${isSuperAdmin}&tenant_id=${myTenantId}`;
+                const response = await fetch(url);
+                const users = await response.json();
+
+                const list = document.getElementById('usersList');
+                list.innerHTML = '';
+                let activeCount = 0;
+                let inactiveCount = 0;
+
+                document.getElementById('currentCount').textContent = users.length;
+                document.getElementById('pageInfo').textContent = `Page ${currentPage + 1}`;
+                document.getElementById('prevPage').disabled = currentPage === 0;
+                document.getElementById('nextPage').disabled = users.length < pageSize;
+
+                const isAdmin = localStorage.getItem('isAdmin') === 'true';
+                if (isAdmin || isSuperAdmin) {
+                    document.getElementById('addUserBtn').classList.remove('hidden');
+                }
+
+                if (users.length > 0) {
+                    document.getElementById('tenantIdInput').value = myTenantId;
+                }
+
+                document.getElementById('totalUsersStat').textContent = users.length;
+
+                users.forEach(u => {
+                    if (u.is_active) activeCount++; else inactiveCount++;
+
+                    const card = `
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 transition-all hover:shadow-xl group">
+                        <div class="flex items-start justify-between mb-8">
+                            <div>
+                                <h3 class="text-xl font-extrabold text-[#181C32] mb-1 group-hover:text-orange-500 transition-colors uppercase tracking-tight">${u.full_name || 'Unnamed'}</h3>
+                                <p class="text-xs font-bold text-gray-400">${u.email}</p>
+                                ${isSuperAdmin ? `<div class="mt-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-100 uppercase tracking-tighter">🏢 ${u.tenant_name || 'Unknown'}</div>` : ''}
+                            </div>
+                            <span class="status-badge ${u.is_active ? 'status-active' : 'status-inactive'}">
+                                ${u.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-y-6 mb-8">
+                            <div>
+                                <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1">Applications</p>
+                                <p class="text-xs font-bold text-gray-800">3</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1 text-right">Created</p>
+                                <p class="text-[10px] font-bold text-gray-800 text-right">${new Date(u.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1">Last Login</p>
+                                <p class="text-xs font-bold text-gray-500">${new Date().toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        ${(isAdmin || isSuperAdmin) ? `
+                        <div class="flex items-center space-x-3 pt-6 border-t border-gray-50">
+                            <button onclick="editUser('${u.id}')" class="flex-1 bg-gray-50 hover:bg-gray-100 text-[#3F4254] font-bold py-3 rounded-xl text-xs transition-all flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Edit
+                            </button>
+                            <button onclick="deleteUser('${u.id}')" class="w-12 h-12 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>` : ''}
+                    </div>
+                    `;
+                    list.innerHTML += card;
+                });
+
+                document.getElementById('activeUsersStat').textContent = activeCount;
+                document.getElementById('inactiveUsersStat').textContent = inactiveCount;
+
+            } catch (error) { console.error(error); }
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            fetchUsers();
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+            try {
+                const response = await fetch(`/api/v1/users/${id}`, { method: 'DELETE' });
+                if (response.ok) fetchUsers();
+                else alert('Failed to delete user');
+            } catch (e) { console.error(e); }
+        }
+
+        async function editUser(id) {
+            try {
+                const response = await fetch(`/api/v1/users/${id}`);
+                const u = await response.json();
+                const form = document.getElementById('createForm');
+
+                document.getElementById('modalTitle').textContent = 'Edit User';
+                document.getElementById('editIdInput').value = u.id;
+                form.elements['full_name'].value = u.full_name;
+                form.elements['email'].value = u.email;
+                form.elements['role'].value = u.role;
+                form.elements['password'].value = '••••••••'; // Don't show
+
+                document.getElementById('submitBtnText').textContent = 'Update User';
+                document.getElementById('createModal').classList.remove('hidden');
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('createForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.is_active = data.status === 'active';
+            if (!data.tenant_id) data.tenant_id = "ad518e7a-86d8-4297-a0e3-5eac5809f9ec";
+            if (data.password === '••••••••') delete data.password;
+
+            const isEdit = !!data.id;
+            const url = isEdit ? `/api/v1/users/${data.id}` : '/api/v1/users';
+            const method = isEdit ? 'PATCH' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    document.getElementById('createModal').classList.add('hidden');
+                    fetchUsers();
+                    e.target.reset();
+                    document.getElementById('editIdInput').value = '';
+                    document.getElementById('modalTitle').textContent = 'Invite User';
+                    document.getElementById('submitBtnText').textContent = 'Invite User';
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + (err.detail || 'Failed to save user'));
+                }
+            } catch (error) { console.error(error); }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmail = localStorage.getItem('userEmail') || 'super@easeemail.com';
+            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userEmail);
+            fetchUsers();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Webhooks - EmailEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body class="bg-[#F3F6F9] min-h-screen flex text-[#3F4254]">
+    <aside id="sidebar-nav"></aside>
+
+    <main class="flex-1 flex flex-col min-w-0">
+        <header
+            class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-10 sticky top-0 z-10">
+            <div>
+                <nav class="flex text-sm text-gray-500 mb-1">
+                    <ol class="flex items-center space-x-2">
+                        <li><a href="/dashboard" class="hover:text-orange-500">Admin</a></li>
+                        <li><svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg></li>
+                        <li class="text-gray-900 font-bold">Webhooks</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right mr-4">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Logged in as
+                    </p>
+                    <p class="text-sm font-bold text-gray-800 top-bar-email">super@easeemail.com</p>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold border border-orange-200">
+                    S</div>
+            </div>
+        </header>
+
+        <div class="p-10">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-[#181C32] mb-2">Webhooks</h2>
+                <p class="text-[#B5B5C3] font-medium">Configure external endpoints to receive email events</p>
+            </div>
+
+            <div class="bg-white p-12 rounded-3xl border border-gray-100 shadow-sm text-center">
+                <div
+                    class="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center text-orange-500 mx-auto mb-6">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-[#181C32] mb-4">No Webhooks Configured</h3>
+                <p class="text-gray-400 max-w-md mx-auto mb-8 font-medium">To receive real-time updates for email
+                    deliveries, bounces, and failures, please add a webhook URL to your individual applications.</p>
+                <a href="/applications"
+                    class="inline-flex items-center bg-[#43428E] hover:bg-[#353470] text-white font-bold py-4 px-10 rounded-xl shadow-lg transition-all">
+                    Go to Applications
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/sidebar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmail = localStorage.getItem('userEmail') || 'super@easeemail.com';
+            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userEmail);
+        });
+    </script>
+</body>
+
+</html>

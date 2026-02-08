@@ -1,0 +1,95 @@
+:root {
+    --primary: #FF7000;
+    --primary-dark: #E66500;
+    --sidebar-bg: #111111;
+    --sidebar-item-hover: #1E1E2D;
+    --content-bg: #F3F6F9;
+    --card-bg: #FFFFFF;
+    --text-main: #3F4254;
+    --text-muted: #B5B5C3;
+    --border-color: #EBEDF3;
+    --input-bg: #F3F6F9;
+    --navy-btn: #43428E;
+}
+
+body {
+    background-color: var(--content-bg);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+}
+
+.sidebar {
+    background-color: var(--sidebar-bg);
+}
+
+.sidebar-item {
+    color: #A2A3B7;
+    transition: all 0.2s;
+}
+
+.sidebar-item:hover {
+    background-color: var(--sidebar-item-hover);
+    color: #FFFFFF;
+}
+
+.sidebar-item.active {
+    background-color: var(--primary);
+    color: #FFFFFF;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: 0.75rem;
+    box-shadow: 0 0 20px 0 rgba(76, 87, 125, 0.02);
+    border: 1px solid var(--border-color);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-navy {
+    background-color: var(--navy-btn);
+    color: white;
+}
+
+.input-field {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.475rem;
+    color: var(--text-main);
+    padding: 0.75rem 1rem;
+}
+
+.input-field:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.475rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background-color: #E8FFF3;
+    color: #50CD89;
+}
+
+.status-inactive {
+    background-color: #FFF5F8;
+    color: #F1416C;
+}
+
+.status-draft {
+    background-color: #FFF8DD;
+    color: #FF9900;
+}
