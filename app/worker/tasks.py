@@ -1,128 +1,239 @@
-import asyncio
-import uuid
-import logging
-import json
-from celery import Celery
-from app.core.config import settings
-from app.db.session import SessionLocal
-from app.models.all_models import EmailJob, EmailService, EmailLog
-from app.schemas.schemas import EmailSendRequest
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from sqlalchemy.orm import joinedload
-from jinja2 import Template
-import aiosmtplib
+"""
+Email worker tasks with idempotency and webhook integration.
 
-# Celery Setup
-celery_app = Celery("fullstack_worker", broker=settings.CELERY_BROKER_URL, backend=settings.CELERY_BROKER_URL)
+This module handles asynchronous email sending with:
+- Synchronous SMTP (no asyncio.run() in Celery)
+- Idempotency guards (sent_at timestamp)
+- Job locking (FOR UPDATE SKIP LOCKED)
+- Failure classification (permanent vs temporary)
+- Webhook dispatch after completion
+"""
+
+import logging
+import time
+from datetime import datetime, timedelta
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.worker.celery_config import celery_app
+from app.worker.exceptions import PermanentFailure, TemporaryFailure
+from app.worker.smtp_sender import send_via_smtp
+from app.worker.webhook_dispatcher import queue_webhook_if_configured
+from app.models.all_models import EmailJob, EmailLog
+from app.db.session import SessionLocal
+from app.core import metrics
 
 logger = logging.getLogger(__name__)
 
-async def send_email_async(job_id: str):
-    db = SessionLocal()
-    try:
-        # Fetch Job
-        job = db.query(EmailJob).filter(EmailJob.id == job_id).first()
-        if not job:
-            logger.error(f"Job {job_id} not found")
-            return
 
-        job.status = "processing"
-        db.commit()
-
-        # Fetch Service & Config with relationships
-        service = db.query(EmailService).options(
-            joinedload(EmailService.template),
-            joinedload(EmailService.smtp_configuration)
-        ).filter(EmailService.id == job.service_id).first()
-        if not service:
-            raise Exception("Email Service not found")
-
-        # Determine Credentials (Legacy vs Linked Config)
-        if service.smtp_configuration:
-            smtp_host = service.smtp_configuration.host
-            smtp_port = service.smtp_configuration.port
-            smtp_user = service.smtp_configuration.username
-            smtp_pass = service.smtp_configuration.password_encrypted # Decrypt in real app!
-            use_tls = service.smtp_configuration.use_tls
-        else:
-            smtp_host = service.smtp_host
-            smtp_port = service.smtp_port
-            smtp_user = service.smtp_user
-            smtp_pass = service.smtp_password
-            use_tls = True # Default
-
-        # Determine Content (Template vs Direct)
-        subject = job.subject
-        body = job.body
-
-        if service.template:
-            # Simple Jinja2 rendering if body is JSON
-            try:
-                data = json.loads(job.body) if job.body and job.body.startswith('{') else {}
-            except:
-                data = {}
-
-            # Render Subject
-            if service.template.subject_template:
-                 subject_tmpl = Template(service.template.subject_template)
-                 subject = subject_tmpl.render(data)
-            
-            # Render Body
-            if service.template.body_template:
-                body_tmpl = Template(service.template.body_template)
-                body = body_tmpl.render(data)
-
-        # Construct Email
-        message = MIMEMultipart("alternative")
-        message["From"] = service.from_email
-        message["To"] = job.to_email
-        message["Subject"] = subject
-        
-        # Attach HTML part
-        message.attach(MIMEText(body, "html"))
-
-        # Send via SMTP
-        use_implicit_tls = (smtp_port == 465)
-        await aiosmtplib.send(
-            message,
-            hostname=smtp_host,
-            port=smtp_port,
-            username=smtp_user,
-            password=smtp_pass,
-            use_tls=use_implicit_tls,
-            start_tls=not use_implicit_tls and use_tls
-        )
-
-        # Update Job Success
-        job.status = "sent"
-        
-        # Create Log
-        log = EmailLog(job_id=job.id, status="sent", response_code=200, response_message="OK")
-        db.add(log)
-        db.commit()
-        logger.info(f"Email sent successfully for job {job_id}")
-
-    except Exception as e:
-        logger.error(f"Failed to send email for job {job_id}: {str(e)}")
-        job.status = "failed"
-        job.error_message = str(e)
-        
-        # Create Error Log
-        log = EmailLog(job_id=job.id, status="failed", response_code=500, response_message=str(e))
-        db.add(log)
-        db.commit()
-    finally:
-        db.close()
-
-@celery_app.task(name="send_email_task")
-def send_email_task(job_id: str):
+@celery_app.task(
+    name="send_email_task",
+    bind=True,
+    max_retries=3,
+    autoretry_for=(TemporaryFailure,),
+    retry_backoff=True,
+    retry_backoff_max=600,  # Max 10 minutes
+    retry_jitter=True,
+)
+def send_email_task(self, job_id: str):
     """
-    Wrapper to run async function in Celery sync worker
-    """
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    Process email job with retry logic and webhook dispatch.
     
-    loop.run_until_complete(send_email_async(job_id))
+    Workflow:
+    1. Acquire job lock (SELECT FOR UPDATE SKIP LOCKED)
+    2. Check idempotency (already sent?)
+    3. Send email via SMTP (sync)
+    4. Classify result (permanent vs temporary failure)
+    5. Update job status + create log
+    6. Queue webhook if configured
+    7. Commit atomically
+    
+    Retry strategy:
+    - Retry 1: ~60 seconds
+    - Retry 2: ~120 seconds
+    - Retry 3: ~240 seconds
+    
+    Args:
+        job_id: UUID of EmailJob to process
+    """
+    with SessionLocal() as db:
+        start_time = time.time()  # Track processing duration
+        
+        # ========================================
+        # 1. Acquire job lock
+        # ========================================
+        job = db.execute(
+            select(EmailJob)
+            .where(EmailJob.id == job_id)
+            .with_for_update(skip_locked=True)
+        ).scalars().first()
+        
+        if job is None:
+            logger.warning(f"Job {job_id} not found or locked by another worker")
+            return
+        
+        # ========================================
+        # 2. Idempotency check
+        # ========================================
+        if job.sent_at is not None:
+            logger.info(f"Job {job_id} already sent at {job.sent_at}, skipping")
+            return
+        
+        # Check if stuck in processing (safety for stale retries)
+        if job.status == "processing" and job.processing_started_at:
+            elapsed = datetime.utcnow() - job.processing_started_at
+            if elapsed < timedelta(minutes=2):
+                logger.warning(f"Job {job_id} still processing, skipping")
+                return
+        
+        # ========================================
+        # 3. Mark as processing
+        # ========================================
+        job.status = "processing"
+        job.processing_started_at = datetime.utcnow()
+        db.commit()
+        
+        final_status = None
+        error_info = None
+        
+        try:
+            # ========================================
+            # 4. Send email (SYNC)
+            # ========================================
+            smtp_start = time.time()
+            send_via_smtp(job, db)
+            smtp_duration = time.time() - smtp_start
+            
+            # Success
+            job.status = "sent"
+            job.sent_at = datetime.utcnow()
+            final_status = "sent"
+            
+            # Track metrics
+            metrics.emails_sent_total.labels(
+                tenant_id=str(job.tenant_id),
+                application_id=str(job.application_id),
+                service_name="email"  # TODO: get from job
+            ).inc()
+            
+            logger.info(
+                f"Email sent successfully: job_id={job_id}",
+                extra={"job_id": job_id, "to_email": job.to_email, "duration_ms": int(smtp_duration * 1000)}
+            )
+            
+        except PermanentFailure as e:
+            # ========================================
+            # 5a. Permanent failure - no retry
+            # ========================================
+            job.status = "failed"
+            job.error_message = str(e)
+            job.error_category = "permanent"
+            final_status = "failed"
+            error_info = {"category": "permanent", "message": str(e)}
+            
+            # Track metrics
+            metrics.emails_failed_total.labels(
+                tenant_id=str(job.tenant_id),
+                application_id=str(job.application_id),
+                service_name="email",
+                error_category="permanent"
+            ).inc()
+            
+            logger.warning(
+                f"Email permanently failed: job_id={job_id}, error={e}",
+                extra={"job_id": job_id, "error": str(e)}
+            )
+            
+        except TemporaryFailure as e:
+            # ========================================
+            # 5b. Temporary failure - check retry count
+            # ========================================
+            if self.request.retries >= self.max_retries:
+                # Max retries exceeded - mark as failed
+                job.status = "failed"
+                job.error_message = f"Max retries exceeded: {e}"
+                job.error_category = "temporary"
+                final_status = "failed"
+                error_info = {"category": "temporary", "message": str(e)}
+                
+                # Track metrics
+                metrics.emails_failed_total.labels(
+                    tenant_id=str(job.tenant_id),
+                    application_id=str(job.application_id),
+                    service_name="email",
+                    error_category="temporary_exhausted"
+                ).inc()
+                
+                logger.error(
+                    f"Email failed after max retries: job_id={job_id}",
+                    extra={"job_id": job_id, "retries": self.request.retries}
+                )
+            else:
+                # Retry
+                job.status = "retry_pending"
+                job.error_message = str(e)
+                job.retry_count += 1
+                
+                # Track retry metrics
+                metrics.email_retries_total.labels(
+                    tenant_id=str(job.tenant_id),
+                    application_id=str(job.application_id)
+                ).inc()
+                
+                # Calculate next retry time
+                backoff = 60 * (2 ** self.request.retries)
+                job.next_retry_at = datetime.utcnow() + timedelta(seconds=backoff)
+                
+                db.commit()
+                
+                logger.info(
+                    f"Email retry scheduled: job_id={job_id}, attempt={job.retry_count}",
+                    extra={"job_id": job_id, "next_retry": job.next_retry_at}
+                )
+                
+                raise  # Celery handles retry
+        
+        except Exception as e:
+            # ========================================
+            # 5c. Unexpected error - treat as temporary
+            # ========================================
+            logger.error(f"Unexpected error for job {job_id}: {e}", exc_info=True)
+            job.status = "failed"
+            job.error_message = f"Unexpected error: {e}"
+            job.error_category = "system"
+            final_status = "failed"
+            error_info = {"category": "system", "message": str(e)}
+        
+        # ========================================
+        # 6. Create email log
+        # ========================================
+        log = EmailLog(
+            job_id=job.id,
+            status=job.status,
+            response_code=200 if final_status == "sent" else 500,
+            response_message="OK" if final_status == "sent" else job.error_message
+        )
+        db.add(log)
+        
+        # ========================================
+        # 7. Queue webhook if configured
+        # ========================================
+        if final_status in ("sent", "failed"):
+            queue_webhook_if_configured(db, job, final_status, error_info)
+        
+        # ========================================
+        # 8. Commit atomically and track duration
+        # ========================================
+        db.commit()
+        
+        # Track processing duration
+        processing_duration = time.time() - start_time
+        metrics.email_processing_duration_seconds.labels(
+            tenant_id=str(job.tenant_id),
+            status=final_status
+        ).observe(processing_duration)
+        
+        logger.info(
+            f"Email job completed: job_id={job_id}, status={final_status}, duration={processing_duration:.2f}s",
+            extra={"job_id": job_id, "final_status": final_status, "duration_s": processing_duration}
+        )

@@ -78,9 +78,13 @@ curl -X 'POST' \
 
 
 
-```md
 # Build the images
 docker-compose build
+
+# optional -1
+docker-compose down
+# optional -2
+docker-compose build api worker
 
 # Start the stack
 docker-compose up -d
@@ -92,4 +96,34 @@ docker-compose ps
 docker-compose logs -f api
 
 ```
+
+---
+
+What's Left: Phase 4 Testing: 
+# Open "Documents/Phase4_Manual_Testing_Guide.md"
+Phase 4 checklist from the plan:
+
+ Test email without webhook configured (no change)
+ Test email with webhook configured (callback fires)
+ Test webhook retry on failure
+ Test webhook max retries exceeded
+How to complete Phase 4:
+
+```bash
+# 1. Start workers
+celery -A app.worker.celery_config worker -Q email_delivery -c 4 &
+celery -A app.worker.celery_config worker -Q webhook_delivery -c 2 &
+
+# 2. Run verification script
+python3 verify_async_email.py
+
+# 3. Manual tests
+# - Configure an application with webhook_url
+# - Send test email
+# - Check webhook was delivered
+# - Test failure scenarios
+
+```
+
+
 ---

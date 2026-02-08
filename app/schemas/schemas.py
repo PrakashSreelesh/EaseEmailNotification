@@ -223,3 +223,44 @@ class LoginResponse(BaseModel):
     is_superadmin: bool
     is_admin: bool
     tenant_id: Optional[UUID4] = None
+
+# ========================================
+# Async Email Response Schemas (v3.0)
+# ========================================
+
+class AsyncEmailJobResponse(BaseModel):
+    """Response for async email send requests"""
+    job_id: str
+    status: str = "queued"
+    message: str = "Email queued for delivery"
+    
+    class Config:
+        from_attributes = True
+
+
+class EmailJobStatusResponse(BaseModel):
+    """Detailed job status for polling"""
+    id: str
+    status: str
+    to_email: str
+    subject: Optional[str] = None
+    
+    # Timing
+    created_at: datetime
+    processing_started_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    
+    # Error info
+    error_message: Optional[str] = None
+    error_category: Optional[str] = None  # "permanent" | "temporary"
+    
+    # Retry info
+    retry_count: int = 0
+    max_retries: int = 3
+    next_retry_at: Optional[datetime] = None
+    
+    # Webhook info
+    webhook_requested: bool = False
+    
+    class Config:
+        from_attributes = True

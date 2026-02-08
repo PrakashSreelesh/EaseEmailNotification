@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard, auth, health
+from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard, auth, health, jobs, metrics
 
 api_router = APIRouter()
 
@@ -17,4 +17,7 @@ api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"]
 api_router.include_router(logs.router, prefix="/logs", tags=["logs"])
 api_router.include_router(tenants.router, prefix="/tenants", tags=["tenants"])
 api_router.include_router(send_email.router, prefix="/send", tags=["emails"])
-api_router.include_router(dashboard.router, prefix="", tags=["dashboard"])
+api_router.include_router(dashboard.router, prefix="", tags=["dashboard"])api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+
+# Metrics endpoint
+api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])

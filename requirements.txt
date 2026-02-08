@@ -17,3 +17,4 @@ celery
 redis
 jinja2
 httpx
+prometheus_client

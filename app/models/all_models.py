@@ -40,11 +40,19 @@ class Application(Base):
     webhook_url = Column(String, nullable=True)
     api_key_expiry = Column(DateTime(timezone=True), nullable=True)
     api_key = Column(String, unique=True, index=True) # Could be hashed
+    
+    # Webhook configuration (NEW/ENHANCED for v3.0)
+    webhook_api_key = Column(String, nullable=True)  # API key for outbound webhook calls
+    webhook_enabled = Column(Boolean, default=False)  # Explicit webhook toggle
+    webhook_events = Column(JSON, default=lambda: ["email.sent", "email.failed"])  # Event filter
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     tenant = relationship("Tenant", back_populates="applications")
     service_configurations = relationship("ServiceConfiguration", back_populates="application")
     webhooks = relationship("WebhookService", back_populates="application")
+    email_jobs = relationship("EmailJob", back_populates="application")  # NEW
+    webhook_deliveries = relationship("WebhookDelivery", back_populates="application")  # NEW
 
 class SMTPConfiguration(Base):
     __tablename__ = "smtp_configurations"
@@ -113,17 +121,39 @@ class EmailJob(Base):
     __tablename__ = "email_jobs"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     service_id = Column(UUID(as_uuid=True), ForeignKey("email_services.id"))
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), index=True)  # NEW: For rate limiting
+    application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id"))  # NEW: For webhook config
+    
     to_email = Column(String)
     subject = Column(String)
     body = Column(Text)
-    status = Column(String, default="queued") # queued, processing, sent, failed
+    
+    # Status tracking
+    status = Column(String, default="queued", index=True)  # queued, processing, sent, failed, retry_pending
+    
+    # Idempotency fields (NEW for v3.0)
+    sent_at = Column(DateTime(timezone=True), nullable=True)  # Set ONLY when email actually sent
+    processing_started_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Error handling (ENHANCED)
     error_message = Column(Text, nullable=True)
+    error_category = Column(String, nullable=True)  # "permanent" or "temporary"
     retry_count = Column(Integer, default=0)
+    max_retries = Column(Integer, default=3)  # NEW
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)  # NEW
+    
+    # Webhook tracking (NEW for v3.0)
+    webhook_requested = Column(Boolean, default=False)  # Was webhook queued?
+    
+    # Audit
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
+    # Relationships
     service = relationship("EmailService", back_populates="jobs")
+    application = relationship("Application", back_populates="email_jobs")  # NEW
     logs = relationship("EmailLog", back_populates="job")
+    webhook_deliveries = relationship("WebhookDelivery", back_populates="email_job")  # NEW
 
 class EmailLog(Base):
     __tablename__ = "email_logs"
@@ -148,3 +178,48 @@ class WebhookService(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     application = relationship("Application", back_populates="webhooks")
+
+class WebhookDelivery(Base):
+    """
+    Tracks individual webhook delivery attempts.
+    One EmailJob can trigger one WebhookDelivery.
+    """
+    __tablename__ = "webhook_deliveries"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Foreign keys
+    email_job_id = Column(UUID(as_uuid=True), ForeignKey("email_jobs.id"), nullable=False, index=True)
+    application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False, index=True)
+    
+    # Webhook target (copied from Application at creation time)
+    webhook_url = Column(String, nullable=False)
+    # NOTE: webhook_api_key is NOT stored here - fetched at delivery time
+    
+    # Event info
+    event_type = Column(String, nullable=False)  # "email.sent" | "email.failed"
+    payload = Column(JSON, nullable=False)  # Serialized webhook body
+    
+    # Delivery status
+    status = Column(String, default="pending", index=True)
+    # Values: pending, delivered, failed
+    
+    # Retry tracking
+    retry_count = Column(Integer, default=0)
+    max_retries = Column(Integer, default=3)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Response tracking
+    last_response_code = Column(Integer, nullable=True)
+    last_response_body = Column(Text, nullable=True)  # Truncated to 1KB
+    last_error = Column(Text, nullable=True)
+    
+    # Timing
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    email_job = relationship("EmailJob", back_populates="webhook_deliveries")
+    application = relationship("Application", back_populates="webhook_deliveries")
