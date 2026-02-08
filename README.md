@@ -76,4 +76,20 @@ curl -X 'POST' \
 }'
 ```
 
+
+
+```md
+# Build the images
+docker-compose build
+
+# Start the stack
+docker-compose up -d
+
+# Check health status
+docker-compose ps
+
+# View logs
+docker-compose logs -f api
+
+```
 ---
