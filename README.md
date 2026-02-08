@@ -37,11 +37,11 @@ This will spin up:
    python -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
-   ```
 
+   # Run the script-Locally
    chmod +x ./run_local.sh
    ./run_local.sh
-
+   ```
 
 2. Run API:
    ```bash
