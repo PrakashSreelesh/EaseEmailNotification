@@ -16,6 +16,12 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.ApplicationResponse)
 async def create_application(app: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if app.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == app.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+
     db_app = Application(
         name=app.name, 
         tenant_id=app.tenant_id, 
@@ -90,13 +96,33 @@ async def update_application(app_id: str, app_update: schemas.ApplicationCreate,
     if not db_app:
         raise HTTPException(status_code=404, detail="Application not found")
     
+    # Update fields only if provided (though schema has defaults, we should be careful with tenant_id)
     db_app.name = app_update.name
-    db_app.tenant_id = app_update.tenant_id
+    
+    # Validate and update tenant_id only if it's different and valid
+    if app_update.tenant_id and app_update.tenant_id != db_app.tenant_id:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == app_update.tenant_id))
+        if not tenant_result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+        db_app.tenant_id = app_update.tenant_id
+        
     db_app.description = app_update.description
     db_app.status = app_update.status or db_app.status
     db_app.webhook_url = app_update.webhook_url
     db_app.api_key_expiry = app_update.api_key_expiry
     
+    await db.commit()
+    await db.refresh(db_app)
+    return db_app
+
+@router.post("/{app_id}/rotate-key", response_model=schemas.ApplicationResponse)
+async def rotate_api_key(app_id: str, db: Session = Depends(get_db)):
+    result = await db.execute(select(Application).where(Application.id == app_id))
+    db_app = result.scalars().first()
+    if not db_app:
+        raise HTTPException(status_code=404, detail="Application not found")
+        
+    db_app.api_key = str(uuid.uuid4())
     await db.commit()
     await db.refresh(db_app)
     return db_app

@@ -19,7 +19,7 @@ from typing import Dict, Any
 # from app.db.session import engine, AsyncSessionLocal   # ← this was missing
 # from app.models.all_models import Base, User
 # from app.core.security import get_password_hash
-from app.core.config import settings   # optional – for FIRST_SUPERUSER
+
 
 
 app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json")
@@ -130,7 +130,10 @@ async def migrations_superadmin():
     from sqlalchemy import select, text
 
     async with AsyncSessionLocal() as db:
-        superuser_email = "admin@easeemail.com"
+        # superuser_email = "admin@easeemail.com"
+        superuser_email=settings.FIRST_SUPERUSER
+        password=settings.FIRST_SUPERUSER_PASSWORD
+
         # ─── Direct ORM check (no crud module needed) ───
         stmt = select(User).where(User.email == superuser_email)
         result = await db.execute(stmt)
@@ -138,14 +141,12 @@ async def migrations_superadmin():
 
         if not superuser:
             print(f"Creating first superuser: {superuser_email}")
-            # superuser_email=settings.FIRST_SUPERUSER
-            # password=settings.FIRST_SUPERUSER_PASSWORD
 
             user_in = UserCreate(
                 email=superuser_email,
                 tenant_id=None,
                 full_name="System Super Administrator",
-                password="admin@123",   # should be set in .env
+                password=password,   # should be set in .env
                 role="super_admin",
                 is_superadmin=True,
                 is_admin=True,

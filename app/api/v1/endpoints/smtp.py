@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from typing import List, Optional, Union
 from app.schemas import schemas
-from app.models.all_models import SMTPConfiguration
+from app.models.all_models import SMTPConfiguration, Tenant
 from app.db.session import get_db
 from pydantic import BaseModel
 
@@ -15,6 +15,12 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.SMTPConfigResponse)
 async def create_smtp_config(config: schemas.SMTPConfigCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if config.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == config.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+
     # In a real app, encrypt the password here!
     db_config = SMTPConfiguration(
         tenant_id=config.tenant_id,

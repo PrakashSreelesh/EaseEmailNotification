@@ -62,79 +62,82 @@ async def get_email_stats(db: AsyncSession = Depends(get_db)):
     )
 
 @router.get("/recent-activity", response_model=List[RecentActivityItem])
-async def get_recent_activity(limit: int = 10, db: AsyncSession = Depends(get_db)):
-    """Get recent email activities (last 10 items)"""
-    # First try to get data with EmailJob join
-    result = await db.execute(
+async def get_recent_activity(db: AsyncSession = Depends(get_db)):
+    """Get recent email activities (last 5 items) from real DB data."""
+    # Join EmailLog with EmailJob to get details like subject, to_email
+    stmt = (
         select(EmailLog, EmailJob)
-        .join(EmailJob, EmailLog.job_id == EmailJob.id, isouter=True)
+        .outerjoin(EmailJob, EmailLog.job_id == EmailJob.id)
         .order_by(desc(EmailLog.created_at))
-        .limit(limit)
+        .limit(5)
     )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    if not rows:
+        return []
 
     activities = []
-    for log, job in result:
-        # Calculate time ago (simplified - in production use proper time formatting)
-        time_diff = "2 hours ago"  # Placeholder - would calculate actual time diff
+    import datetime
 
-        # Determine icon based on status
-        icon_map = {
-            'sent': 'mail',
-            'delivered': 'check-circle',
-            'failed': 'alert-circle',
-            'pending': 'clock'
-        }
-        icon = icon_map.get(log.status, 'mail')
+    now = datetime.datetime.utcnow()
 
-        # Format title and subtitle based on available data
-        if job:  # If we have job data
+    for log, job in rows:
+        # 1. Determine Icon
+        # default to 'mail'
+        icon = 'mail'
+        if log.status == 'sent':
+            icon = 'check-circle'
+        elif log.status == 'failed':
+            icon = 'alert-circle'
+        elif log.status == 'queued':
+            icon = 'clock'
+        elif log.status == 'delivered':
+            icon = 'check-circle'
+
+        # 2. Determine Title/Subtitle
+        if job:
             if log.status == 'sent':
-                title = f"Email sent to {job.to_email}"
-                subtitle = f"Subject: {job.subject[:50]}..."
-            elif log.status == 'delivered':
-                title = f"Email delivered to {job.to_email}"
-                subtitle = f"Subject: {job.subject[:50]}..."
+                title = "Email Sent Successfully"
+                subtitle = f"To: {job.to_email}"
             elif log.status == 'failed':
-                title = f"Email failed to {job.to_email}"
-                subtitle = f"Error: {log.response_message[:50] if log.response_message else 'Unknown error'}"
+                title = "Email Delivery Failed"
+                subtitle = f"To: {job.to_email}"
+            elif log.status == 'queued':
+                title = "Email Queued"
+                subtitle = f"To: {job.to_email}"
             else:
-                title = f"Email pending to {job.to_email}"
-                subtitle = f"Subject: {job.subject[:50]}..."
-        else:  # Fallback to log-only data
-            title = f"Email {log.status}"
-            subtitle = f"Log ID: {str(log.id)[:8]}..."
+                title = f"Email {log.status.capitalize()}"
+                subtitle = f"To: {job.to_email}"
+        else:
+            # Fallback if job is missing (orphaned log?)
+            title = f"Email {log.status.capitalize()}"
+            subtitle = "Unknown Recipient"
+
+        # 3. Calculate Time Ago
+        diff = now - log.created_at
+        seconds = diff.total_seconds()
+        
+        if seconds < 60:
+            time_str = "Just now"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            time_str = f"{minutes} min{'s' if minutes != 1 else ''} ago"
+        elif seconds < 86400:
+            hours = int(seconds // 3600)
+            time_str = f"{hours} hour{'s' if hours != 1 else ''} ago"
+        else:
+            days = int(seconds // 86400)
+            time_str = f"{days} day{'s' if days != 1 else ''} ago"
 
         activities.append(RecentActivityItem(
             icon=icon,
             title=title,
             subtitle=subtitle,
-            time=time_diff
+            time=time_str.upper()
         ))
 
-    # If no activities from database, return some mock data for demo purposes
-    if not activities:
-        activities = [
-            RecentActivityItem(
-                icon="mail",
-                title="500 emails sent",
-                subtitle="via Primary SMTP account",
-                time="2 hours ago"
-            ),
-            RecentActivityItem(
-                icon="file-text",
-                title="Template created",
-                subtitle="Welcome Onboarding Email",
-                time="5 hours ago"
-            ),
-            RecentActivityItem(
-                icon="package",
-                title="App registered",
-                subtitle="New application connected",
-                time="1 day ago"
-            )
-        ]
-
-    return activities[:5]  # Return max 5 items as specified
+    return activities
 
 @router.get("/quick-stats", response_model=QuickStats)
 async def get_quick_stats(db: AsyncSession = Depends(get_db)):
@@ -156,7 +159,7 @@ async def get_quick_stats(db: AsyncSession = Depends(get_db)):
     # Calculate rates (avoid division by zero)
     delivery_rate = (delivered / total_sent * 100) if total_sent > 0 else 0.0
     bounce_rate = (failed / total_sent * 100) if total_sent > 0 else 0.0
-    open_rate = 42.3  # Placeholder - would need tracking data for actual open rates
+    open_rate = 0.0  # Placeholder - would need tracking data for actual open rates
 
     return QuickStats(
         delivery_rate=round(delivery_rate, 1),

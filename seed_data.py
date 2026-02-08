@@ -177,7 +177,6 @@ async def seed_async():
             if not svc:
                 svc = EmailService(
                     tenant_id=tenant.id,
-                    application_id=app1.id,
                     name="Onboarding Service",
                     template_id=tmpl1.id
                 )

@@ -59,13 +59,26 @@
                     <p class="text-[#B5B5C3] font-medium">Manage standard user accounts (Super Admin accounts excluded)
                     </p>
                 </div>
-                <button id="addUserBtn" onclick="document.getElementById('createModal').classList.remove('hidden')"
-                    class="hidden bg-[#43428E] hover:bg-[#353470] text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    + Invite User
-                </button>
+                <div class="flex items-center space-x-4">
+                    <button id="addTenantUserBtn" onclick="openAddTenantUserModal()"
+                        class="hidden bg-white border border-gray-200 hover:border-orange-500 text-gray-700 hover:text-orange-500 font-bold py-3 px-6 rounded-xl shadow-sm transition-all flex items-center group">
+                        <svg class="w-5 h-5 mr-2 text-gray-400 group-hover:text-orange-500 transition-colors"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                            </path>
+                        </svg>
+                        Add Tenant User
+                    </button>
+                    <button id="addUserBtn" onclick="openInviteUserModal()"
+                        class="hidden bg-[#43428E] hover:bg-[#353470] text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        + Invite User
+                    </button>
+                </div>
             </div>
 
             <!-- Invite User Section (Screenshot 12 style) -->
@@ -103,7 +116,16 @@
                             <input type="text" name="full_name" placeholder="John Doe" required
                                 class="input-field w-full">
                         </div>
-                        <div>
+                        <div id="tenantSelectField" class="hidden col-span-2 md:col-span-1">
+                            <label
+                                class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Select
+                                Tenant *</label>
+                            <select name="tenant_selection" id="tenantSelectInput"
+                                class="input-field w-full appearance-none">
+                                <option value="">Select a Tenant...</option>
+                            </select>
+                        </div>
+                        <div id="roleField">
                             <label
                                 class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Role</label>
                             <select name="role" class="input-field w-full appearance-none">
@@ -111,7 +133,7 @@
                                 <option value="viewer">Viewer</option>
                             </select>
                         </div>
-                        <div>
+                        <div id="statusField">
                             <label
                                 class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Status</label>
                             <select name="status" class="input-field w-full appearance-none">
@@ -119,12 +141,11 @@
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-                        <div id="tenantIdField">
+                        <div id="passwordField">
                             <label
                                 class="block text-[11px] font-extrabold text-gray-900 uppercase tracking-wider mb-2">Temporary
                                 Password *</label>
-                            <input type="password" name="password" placeholder="••••••••" required
-                                class="input-field w-full">
+                            <input type="password" name="password" placeholder="••••••••" class="input-field w-full">
                         </div>
                     </div>
                     <div class="pt-6 border-t border-gray-100 flex space-x-4">
@@ -236,6 +257,7 @@
     <script>
         let currentPage = 0;
         const pageSize = 30;
+        let isTenantUserMode = false;
 
         async function fetchUsers() {
             const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
@@ -245,7 +267,7 @@
                 // 1. Get current user data to obtain their tenant_id
                 const meRes = await fetch(`/api/v1/users/me?email=${userEmail}`);
                 const me = await meRes.json();
-                const myTenantId = me.tenant_id;
+                const myTenantId = me.tenant_id || '';
 
                 // 2. Fetch users with role context
                 const url = `/api/v1/users?skip=${currentPage * pageSize}&limit=${pageSize}&is_superadmin=${isSuperAdmin}&tenant_id=${myTenantId}`;
@@ -263,8 +285,18 @@
                 document.getElementById('nextPage').disabled = users.length < pageSize;
 
                 const isAdmin = localStorage.getItem('isAdmin') === 'true';
-                if (isAdmin || isSuperAdmin) {
+
+                // Button Visibility Logic
+                if (isSuperAdmin) {
+                    document.getElementById('addTenantUserBtn').classList.remove('hidden');
+                    document.getElementById('addUserBtn').classList.add('hidden'); // Super Admin uses "Add Tenant User" mainly
+                } else if (isAdmin) {
                     document.getElementById('addUserBtn').classList.remove('hidden');
+                    document.getElementById('addTenantUserBtn').classList.add('hidden');
+                } else {
+                    // Viewer
+                    document.getElementById('addUserBtn').classList.add('hidden');
+                    document.getElementById('addTenantUserBtn').classList.add('hidden');
                 }
 
                 if (users.length > 0) {
@@ -290,7 +322,7 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-y-6 mb-8">
-                            <div>
+                             <div>
                                 <p class="text-[10px] font-extrabold text-gray-300 uppercase tracking-widest leading-none mb-1">Applications</p>
                                 <p class="text-xs font-bold text-gray-800">3</p>
                             </div>
@@ -325,6 +357,65 @@
             } catch (error) { console.error(error); }
         }
 
+        async function fetchTenants() {
+            try {
+                const response = await fetch('/api/v1/tenants');
+                const tenants = await response.json();
+                const select = document.getElementById('tenantSelectInput');
+                select.innerHTML = '<option value="">Select a Tenant...</option>';
+                tenants.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    option.textContent = t.name;
+                    select.appendChild(option);
+                });
+            } catch (e) {
+                console.error("Error fetching tenants:", e);
+            }
+        }
+
+        function openInviteUserModal() {
+            isTenantUserMode = false;
+            document.getElementById('createForm').reset();
+            document.getElementById('modalTitle').textContent = 'Invite User';
+            document.getElementById('submitBtnText').textContent = 'Invite User';
+            document.getElementById('editIdInput').value = '';
+
+            // Show standard fields for Tenant Admin
+            document.getElementById('roleField').classList.remove('hidden');
+            document.getElementById('statusField').classList.remove('hidden'); // Default active checking in submit
+            document.getElementById('passwordField').classList.remove('hidden');
+            document.getElementById('tenantSelectField').classList.add('hidden');
+
+            // Set default status to active in UI if possible, or just rely on backend default
+            // Select 'active' by default
+            document.querySelector("select[name='status']").value = 'active';
+
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+
+        async function openAddTenantUserModal() {
+            isTenantUserMode = true;
+            document.getElementById('createForm').reset();
+            document.getElementById('modalTitle').textContent = 'Create Tenant Admin User';
+            document.getElementById('submitBtnText').textContent = 'Create Tenant Admin';
+            document.getElementById('editIdInput').value = '';
+
+            // Ensure tenants are loaded
+            await fetchTenants();
+
+            // Toggle fields visibility
+            // Hide Role, Status. Show Password.
+            document.getElementById('roleField').classList.add('hidden');
+            document.getElementById('statusField').classList.add('hidden');
+            document.getElementById('passwordField').classList.remove('hidden');
+
+            // Show Tenant Select
+            document.getElementById('tenantSelectField').classList.remove('hidden');
+
+            document.getElementById('createModal').classList.remove('hidden');
+        }
+
         function changePage(delta) {
             currentPage += delta;
             fetchUsers();
@@ -340,6 +431,7 @@
         }
 
         async function editUser(id) {
+            isTenantUserMode = false;
             try {
                 const response = await fetch(`/api/v1/users/${id}`);
                 const u = await response.json();
@@ -352,6 +444,12 @@
                 form.elements['role'].value = u.role;
                 form.elements['password'].value = '••••••••'; // Don't show
 
+                // Keep standard fields visible
+                document.getElementById('roleField').classList.remove('hidden');
+                document.getElementById('statusField').classList.remove('hidden');
+                document.getElementById('passwordField').classList.remove('hidden');
+                document.getElementById('tenantSelectField').classList.add('hidden');
+
                 document.getElementById('submitBtnText').textContent = 'Update User';
                 document.getElementById('createModal').classList.remove('hidden');
             } catch (e) { console.error(e); }
@@ -361,9 +459,30 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            data.is_active = data.status === 'active';
+
+            // Default Tenant ID fallback (for standard invite)
             if (!data.tenant_id) data.tenant_id = "ad518e7a-86d8-4297-a0e3-5eac5809f9ec";
             if (data.password === '••••••••') delete data.password;
+
+            if (isTenantUserMode) {
+                // Apply specific Logic for Tenant Admin
+                data.is_active = true;
+                data.role = 'admin'; // "Tenent Admin" maps to 'admin' per typical schema or frontend logic
+                data.is_admin = true;
+                data.is_superadmin = false;
+
+                // Use selected tenant
+                const tenantSelect = document.getElementById('tenantSelectInput');
+                if (tenantSelect.value) {
+                    data.tenant_id = tenantSelect.value;
+                } else {
+                    alert("Please select a Tenant");
+                    return;
+                }
+            } else {
+                // Standard Logic
+                data.is_active = data.status === 'active';
+            }
 
             const isEdit = !!data.id;
             const url = isEdit ? `/api/v1/users/${data.id}` : '/api/v1/users';
@@ -381,8 +500,7 @@
                     fetchUsers();
                     e.target.reset();
                     document.getElementById('editIdInput').value = '';
-                    document.getElementById('modalTitle').textContent = 'Invite User';
-                    document.getElementById('submitBtnText').textContent = 'Invite User';
+                    isTenantUserMode = false; // Reset mode
                 } else {
                     const err = await response.json();
                     alert('Error: ' + (err.detail || 'Failed to save user'));

@@ -29,7 +29,7 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: UUID4
-    tenant_id: UUID4
+    tenant_id: Optional[UUID4] = None
     tenant_name: Optional[str] = None
     created_at: datetime
     

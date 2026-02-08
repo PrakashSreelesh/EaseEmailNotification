@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from typing import List, Optional, Union
 from app.schemas import schemas
-from app.models.all_models import EmailTemplate, SMTPConfiguration
+from app.models.all_models import EmailTemplate, SMTPConfiguration, Tenant
 from app.db.session import get_db
 from pydantic import BaseModel
 
@@ -19,9 +19,16 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.TemplateResponse)
 async def create_template(template: schemas.TemplateCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if template.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == template.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+    
     db_template = EmailTemplate(
         tenant_id=template.tenant_id,
         name=template.name,
+        category=template.category,
         subject_template=template.subject_template,
         body_template=template.body_template,
         sample_data=template.sample_data

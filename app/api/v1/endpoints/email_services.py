@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from typing import List
 from app.schemas import schemas
-from app.models.all_models import EmailService, Application, ServiceConfiguration
+from app.models.all_models import EmailService, Application, ServiceConfiguration, Tenant, SMTPConfiguration, EmailTemplate
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 
@@ -11,6 +11,30 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.EmailServiceResponse)
 async def create_email_service(service: schemas.EmailServiceCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if service.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == service.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Validate template if provided
+    if service.template_id:
+        result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == service.template_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Email Template not found")
+
+    # Validate configurations
+    for config in service.configurations:
+        # Check Application
+        res_app = await db.execute(select(Application).where(Application.id == config.application_id))
+        if not res_app.scalars().first():
+             raise HTTPException(status_code=404, detail=f"Application {config.application_id} not found")
+        
+        # Check SMTP
+        res_smtp = await db.execute(select(SMTPConfiguration).where(SMTPConfiguration.id == config.smtp_configuration_id))
+        if not res_smtp.scalars().first():
+             raise HTTPException(status_code=404, detail=f"SMTP Configuration {config.smtp_configuration_id} not found")
+
     # Create Email Service
     db_service = EmailService(
         name=service.name,

@@ -99,4 +99,47 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     }
+
+    // Global Spinner Logic
+    const spinnerHtml = `
+    <div id="global-spinner" class="fixed inset-0 z-[9999] bg-white/80 flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500"></div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', spinnerHtml);
+
+    let activeRequests = 0;
+    const spinnerElement = document.getElementById('global-spinner');
+
+    window.showSpinner = function () {
+        activeRequests++;
+        spinnerElement.classList.remove('hidden');
+    };
+
+    window.hideSpinner = function () {
+        activeRequests--;
+        if (activeRequests <= 0) {
+            activeRequests = 0;
+            spinnerElement.classList.add('hidden');
+        }
+    };
+
+    // Intercept Fetch
+    const originalFetch = window.fetch;
+    window.fetch = async function (...args) {
+        showSpinner();
+        try {
+            const response = await originalFetch(...args);
+            return response;
+        } catch (error) {
+            throw error;
+        } finally {
+            hideSpinner();
+        }
+    };
+
+    // Show spinner on page unload (navigation)
+    window.addEventListener('beforeunload', () => {
+        spinnerElement.classList.remove('hidden');
+    });
 });
