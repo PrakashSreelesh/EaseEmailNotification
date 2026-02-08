@@ -1,48 +1,192 @@
-version: '3.8'
+# ================================================================
+# EaseEmail Notifications - Docker Compose Configuration
+# Production-ready with health checks, resource limits, and isolation
+# ================================================================
 
 services:
+  # ----------------------------------------------------------------
+  # PostgreSQL Database
+  # ----------------------------------------------------------------
   db:
     image: postgres:15-alpine
+    container_name: easeemail-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-easeemail}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Performance tuning for containerized PostgreSQL
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=easeemail
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-easeemail}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - easeemail-internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
+  # ----------------------------------------------------------------
+  # Redis (Queue + Cache)
+  # ----------------------------------------------------------------
   redis:
     image: redis:7-alpine
+    container_name: easeemail-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - easeemail-internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
 
+  # ----------------------------------------------------------------
+  # API Server (FastAPI + Gunicorn)
+  # ----------------------------------------------------------------
   api:
-    build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: easeemail-api
+    restart: unless-stopped
+    command: >
+      gunicorn app.main:app
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:8000
+      --workers 2
+      --threads 1
+      --timeout 120
+      --graceful-timeout 30
+      --keep-alive 5
+      --max-requests 1000
+      --max-requests-jitter 100
+      --access-logfile -
+      --error-logfile -
+      --log-level info
     volumes:
-      - .:/app
+      - ./app/static:/app/app/static:ro
+      - ./app/templates:/app/app/templates:ro
+      - app_logs:/app/logs
     ports:
       - "8000:8000"
-    depends_on:
-      - db
-      - redis
+    env_file:
+      - .env
     environment:
-      - POSTGRES_SERVER=db
-      - REDIS_HOST=redis
+      POSTGRES_SERVER: db
+      REDIS_HOST: redis
+      RUN_MIGRATIONS: "true"
+      # Explicit service discovery
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-easeemail}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - easeemail-internal
+      - easeemail-public
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
+  # ----------------------------------------------------------------
+  # Background Worker
+  # Processes email sending and webhook delivery
+  # ----------------------------------------------------------------
   worker:
-    build: .
-    command: celery -A app.worker.tasks worker --loglevel=info
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: easeemail-worker
+    restart: unless-stopped
+    # Custom worker command - uses Celery for background processing
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=4 --prefetch-multiplier=1
     volumes:
-      - .:/app
-    depends_on:
-      - db
-      - redis
+      - app_logs:/app/logs
+    env_file:
+      - .env
     environment:
-      - POSTGRES_SERVER=db
-      - REDIS_HOST=redis
-      - C_FORCE_ROOT=true 
+      POSTGRES_SERVER: db
+      REDIS_HOST: redis
+      RUN_MIGRATIONS: "false"
+      # Worker-specific settings
+      WORKER_CONCURRENCY: "4"
+      WORKER_PREFETCH: "1"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-easeemail}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; redis.Redis(host='redis').ping()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - easeemail-internal
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 128M
 
+# ----------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------
 volumes:
   postgres_data:
+    name: easeemail-postgres-data
+  redis_data:
+    name: easeemail-redis-data
+  app_logs:
+    name: easeemail-app-logs
+
+# ----------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------
+networks:
+  easeemail-internal:
+    name: easeemail-internal
+    driver: bridge
+    internal: true  # No external access
+  easeemail-public:
+    name: easeemail-public
+    driver: bridge
+    # API exposed here for external access

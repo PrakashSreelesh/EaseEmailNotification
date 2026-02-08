@@ -1,7 +1,10 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard, auth
+from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard, auth, health
 
 api_router = APIRouter()
+
+# Health endpoints (no prefix for /health/live and /health/ready)
+api_router.include_router(health.router, tags=["health"])
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(email.router, prefix="/email", tags=["emails"])

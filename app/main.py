@@ -37,6 +37,26 @@ async def init_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+# Root-level health endpoints for Docker/Kubernetes health checks
+# These are separate from the API versioned endpoints
+@app.get("/health/live")
+async def health_live():
+    """Liveness probe - process is running"""
+    return {"status": "alive", "service": "easeemail-api"}
+
+@app.get("/health/ready")
+async def health_ready():
+    """
+    Readiness probe - can serve traffic
+    Basic check without DB dependency for faster startup
+    """
+    return {"status": "ready", "service": "easeemail-api"}
+
+@app.get("/health")
+async def health():
+    """Combined health check"""
+    return {"status": "ok", "service": "easeemail-api"}
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
