@@ -136,6 +136,7 @@ class ServiceConfigurationResponse(ServiceConfigurationBase):
 class EmailServiceBase(BaseModel):
     name: str
     description: Optional[str] = None
+    from_email: Optional[str] = None
     template_id: Optional[UUID4] = None
     status: Optional[str] = "active"
     created_by: Optional[str] = None
@@ -155,6 +156,7 @@ class EmailServiceResponse(BaseModel):
     id: UUID4
     name: str
     description: str = ""
+    from_email: Optional[str] = None
     status: str = "active"
     created_by: str = "System"
     created_at: datetime

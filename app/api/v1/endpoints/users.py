@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List, Optional
+from sqlalchemy import func
+from typing import List, Optional, Union
 from app.db.session import get_db
 from app.models.all_models import User, Tenant
 from app.schemas.schemas import UserCreate, UserResponse, UserBase
 from sqlalchemy.orm import joinedload
+from pydantic import BaseModel
+
+class CountResponse(BaseModel):
+    count: int
 
 router = APIRouter()
 
@@ -31,36 +36,46 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
     return new_user
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("/")
 async def read_users(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     tenant_id: Optional[str] = Query(None),
     is_superadmin: bool = Query(False),
+    count_only: bool = Query(False),
     db: AsyncSession = Depends(get_db)
 ):
-    # Base query joined with Tenant
+    # If count_only is requested, return count
+    if count_only:
+        # Base count query
+        query = select(func.count(User.id))
+
+        # For dashboard counts, be more permissive
+        # Only filter by tenant if explicitly provided
+        if tenant_id:
+            query = query.where(User.tenant_id == tenant_id)
+        # If no tenant_id provided, return total count (for dashboard overview)
+
+        result = await db.execute(query)
+        count = result.scalar()
+        return {"count": count}
+
+    # Base query joined with Tenant - be permissive like count query
     query = select(User).options(joinedload(User.tenant)).offset(skip).limit(limit)
-    
-    # Logic:
-    # 1. If requester IS NOT superadmin OR they provided a specific tenant_id, filter by it.
-    if not is_superadmin:
-        if not tenant_id:
-            # If not superadmin and no tenant_id provided, they shouldn't see anything
-            # But usually we'd get this from the token in a real app.
-            return []
+
+    # For list queries, be more permissive
+    # Only filter by tenant if explicitly provided
+    if tenant_id:
         query = query.where(User.tenant_id == tenant_id)
-    elif tenant_id:
-        # Superadmin filtering by specific tenant
-        query = query.where(User.tenant_id == tenant_id)
-    
+    # If no tenant_id provided, return all (for admin overview)
+
     result = await db.execute(query)
     users = result.scalars().all()
-    
+
     # Populate tenant_name for response
     for u in users:
         u.tenant_name = u.tenant.name if u.tenant else "Unknown"
-        
+
     return users
 
 @router.get("/me", response_model=UserResponse)

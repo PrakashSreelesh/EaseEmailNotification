@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
-from typing import List, Optional
+from sqlalchemy import func
+from typing import List, Optional, Union
 from app.schemas import schemas
 from app.models.all_models import SMTPConfiguration
 from app.db.session import get_db
+from pydantic import BaseModel
+
+class CountResponse(BaseModel):
+    count: int
 
 router = APIRouter()
 
@@ -26,11 +31,38 @@ async def create_smtp_config(config: schemas.SMTPConfigCreate, db: Session = Dep
     await db.refresh(db_config)
     return db_config
 
-@router.get("/", response_model=List[schemas.SMTPConfigResponse])
-async def read_smtp_configs(tenant_id: Optional[str] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@router.get("/")
+async def read_smtp_configs(
+    tenant_id: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    count_only: bool = Query(False),
+    is_superadmin: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    # If count_only is requested, return count
+    if count_only:
+        query = select(func.count(SMTPConfiguration.id))
+
+        # For dashboard counts, be more permissive
+        # Only filter by tenant if explicitly provided
+        if tenant_id:
+            query = query.where(SMTPConfiguration.tenant_id == tenant_id)
+        # If no tenant_id provided, return total count (for dashboard overview)
+
+        result = await db.execute(query)
+        count = result.scalar()
+        return {"count": count}
+
+    # Regular query - be permissive like count query
     query = select(SMTPConfiguration)
+
+    # For list queries, be more permissive
+    # Only filter by tenant if explicitly provided
     if tenant_id:
         query = query.where(SMTPConfiguration.tenant_id == tenant_id)
+    # If no tenant_id provided, return all (for admin overview)
+
     result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
