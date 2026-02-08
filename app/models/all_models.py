@@ -67,6 +67,7 @@ class EmailTemplate(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"))
     name = Column(String)
+    category = Column(String, default="General")  # Category field added
     subject_template = Column(String)
     body_template = Column(Text) # HTML or Text
     sample_data = Column(JSON, nullable=True) # Sample variables data

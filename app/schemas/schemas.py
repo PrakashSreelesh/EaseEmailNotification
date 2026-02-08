@@ -25,7 +25,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    tenant_id: UUID4
+    tenant_id: Optional[UUID4] = None
 
 class UserResponse(UserBase):
     id: UUID4
@@ -77,6 +77,7 @@ class SMTPConfigResponse(SMTPConfigBase):
 
 class TemplateBase(BaseModel):
     name: str
+    category: Optional[str] = "General"
     subject_template: str
     body_template: str
     sample_data: Optional[dict] = None

@@ -92,6 +92,7 @@ async def update_template(template_id: str, template_update: schemas.TemplateCre
         raise HTTPException(status_code=404, detail="Template not found")
     
     db_template.name = template_update.name
+    db_template.category = template_update.category  # Added category update
     db_template.subject_template = template_update.subject_template
     db_template.body_template = template_update.body_template
     db_template.sample_data = template_update.sample_data
