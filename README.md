@@ -52,3 +52,28 @@ This will spin up:
    ```bash
    celery -A app.worker.tasks worker --loglevel=info
    ```
+
+
+
+- Send email using Application API Key authentication
+
+```bash
+curl -X 'POST' \
+  'http://0.0.0.0:8000/api/v1/send/email/?template=Welcome%20Email' \
+  -H 'accept: application/json' \
+  -H 'XAPIKey: XAPIKey' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "to_email": "prakashsreelesh94@gmail.com",
+  "variables_data": {
+    "date": "09-02-2026",
+    "username": "Sreelesh Prakash",
+    "password": "password@123",
+    "login_url": "sample_login_url",
+    "application": "sample_application"
+  },
+  "service_name": "Service Test"
+}'
+```
+
+---

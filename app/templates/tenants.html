@@ -86,22 +86,28 @@
             </div>
         </div>
 
-        <!-- Create Modal Panel -->
-        <div id="createModal" class="hidden fixed inset-0 z-50">
-            <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
-                onclick="this.parentElement.classList.add('hidden')"></div>
-            <div class="absolute inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl flex flex-col">
-                <div class="p-10 border-b border-gray-100 flex items-center justify-between">
-                    <h3 class="text-2xl font-black text-[#181C32]" id="modalTitle">Create Tenant</h3>
+        <!-- Create/Edit Tenant Modal -->
+        <div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                onclick="document.getElementById('createModal').classList.add('hidden')"></div>
+
+            <div
+                class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div class="p-10 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                    <div>
+                        <h3 class="text-2xl font-black text-[#181C32]" id="modalTitle">Create Tenant</h3>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Manage organization
+                            details</p>
+                    </div>
                     <button onclick="document.getElementById('createModal').classList.add('hidden')"
-                        class="text-gray-400 hover:text-gray-900">
+                        class="text-gray-400 hover:text-gray-900 transition-colors p-2 hover:bg-gray-50 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
-                <form id="createForm" class="p-10 space-y-8">
+                <form id="createForm" class="flex-1 overflow-y-auto p-10 space-y-8">
                     <input type="hidden" name="id" id="editIdInput">
                     <div>
                         <label
@@ -110,11 +116,13 @@
                         <input type="text" name="name" placeholder="e.g., Acme Corp" required
                             class="input-field w-full">
                     </div>
-                    <div class="pt-8 flex space-x-4">
+                    <div class="pt-8 flex space-x-4 sticky bottom-0 bg-white">
                         <button type="submit"
-                            class="flex-1 bg-[#43428E] hover:bg-[#353470] text-white font-black py-4 rounded-xl shadow-xl transition-all">
+                            class="flex-1 bg-[#FF7000] hover:bg-[#E66500] text-white font-black py-4 rounded-xl shadow-xl shadow-orange-500/20 transition-all transform active:scale-[0.98]">
                             <span id="submitBtnText">Create Tenant</span>
                         </button>
+                        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 rounded-xl transition-all">Cancel</button>
                     </div>
                 </form>
             </div>

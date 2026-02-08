@@ -11,7 +11,15 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.ApplicationResponse)
 async def create_application(app: schemas.ApplicationCreate, db: Session = Depends(get_db)):
-    db_app = Application(name=app.name, tenant_id=app.tenant_id, api_key=str(uuid.uuid4()))
+    db_app = Application(
+        name=app.name, 
+        tenant_id=app.tenant_id, 
+        api_key=str(uuid.uuid4()),
+        description=app.description,
+        status=app.status or "active",
+        webhook_url=app.webhook_url,
+        api_key_expiry=app.api_key_expiry
+    )
     db.add(db_app)
     await db.commit()
     await db.refresh(db_app)
@@ -49,6 +57,10 @@ async def update_application(app_id: str, app_update: schemas.ApplicationCreate,
     
     db_app.name = app_update.name
     db_app.tenant_id = app_update.tenant_id
+    db_app.description = app_update.description
+    db_app.status = app_update.status or db_app.status
+    db_app.webhook_url = app_update.webhook_url
+    db_app.api_key_expiry = app_update.api_key_expiry
     
     await db.commit()
     await db.refresh(db_app)

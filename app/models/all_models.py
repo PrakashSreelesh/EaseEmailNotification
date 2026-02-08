@@ -35,11 +35,15 @@ class Application(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"))
     name = Column(String)
+    description = Column(Text, nullable=True)
+    status = Column(String, default="active")
+    webhook_url = Column(String, nullable=True)
+    api_key_expiry = Column(DateTime(timezone=True), nullable=True)
     api_key = Column(String, unique=True, index=True) # Could be hashed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     tenant = relationship("Tenant", back_populates="applications")
-    email_services = relationship("EmailService", back_populates="application")
+    service_configurations = relationship("ServiceConfiguration", back_populates="application")
     webhooks = relationship("WebhookService", back_populates="application")
 
 class SMTPConfiguration(Base):
@@ -56,7 +60,7 @@ class SMTPConfiguration(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     tenant = relationship("Tenant", back_populates="smtp_configurations")
-    email_services = relationship("EmailService", back_populates="smtp_configuration")
+    service_configurations = relationship("ServiceConfiguration", back_populates="smtp_configuration")
 
 class EmailTemplate(Base):
     __tablename__ = "email_templates"
@@ -74,18 +78,34 @@ class EmailTemplate(Base):
 class EmailService(Base):
     __tablename__ = "email_services"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id"))
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"))
     template_id = Column(UUID(as_uuid=True), ForeignKey("email_templates.id"), nullable=True)
-    smtp_configuration_id = Column(UUID(as_uuid=True), ForeignKey("smtp_configurations.id"), nullable=True)
     
     name = Column(String)
-    from_email = Column(String)
+    description = Column(Text, nullable=True)
+    status = Column(String, default="active")
+    created_by = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    application = relationship("Application", back_populates="email_services")
     template = relationship("EmailTemplate", back_populates="email_services")
-    smtp_configuration = relationship("SMTPConfiguration", back_populates="email_services")
+    configurations = relationship("ServiceConfiguration", back_populates="email_service", cascade="all, delete-orphan")
     jobs = relationship("EmailJob", back_populates="service")
+
+class ServiceConfiguration(Base):
+    __tablename__ = "service_configurations"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email_service_id = Column(UUID(as_uuid=True), ForeignKey("email_services.id"))
+    application_id = Column(UUID(as_uuid=True), ForeignKey("applications.id"))
+    smtp_configuration_id = Column(UUID(as_uuid=True), ForeignKey("smtp_configurations.id"))
+    
+    is_active = Column(Boolean, default=True)
+    is_delete = Column(Boolean, default=False)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    email_service = relationship("EmailService", back_populates="configurations")
+    application = relationship("Application", back_populates="service_configurations")
+    smtp_configuration = relationship("SMTPConfiguration", back_populates="service_configurations")
 
 class EmailJob(Base):
     __tablename__ = "email_jobs"

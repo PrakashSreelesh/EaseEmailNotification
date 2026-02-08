@@ -14,7 +14,7 @@ from jinja2 import Template
 import aiosmtplib
 
 # Celery Setup
-celery_app = Celery("fullstack_worker", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
+celery_app = Celery("fullstack_worker", broker=settings.CELERY_BROKER_URL, backend=settings.CELERY_BROKER_URL)
 
 logger = logging.getLogger(__name__)
 
