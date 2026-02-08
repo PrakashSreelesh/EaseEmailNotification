@@ -76,7 +76,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
                             </path>
                         </svg>
-                        + Invite User
+                        Invite User
                     </button>
                 </div>
             </div>
@@ -510,7 +510,8 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const userEmail = localStorage.getItem('userEmail') || 'super@easeemail.com';
-            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userEmail);
+            const userName = localStorage.getItem('userName') || userEmail;
+            document.querySelectorAll('.top-bar-email').forEach(el => el.textContent = userName);
             fetchUsers();
         });
     </script>

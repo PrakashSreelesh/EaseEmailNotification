@@ -194,8 +194,28 @@ async def read_user_me(email: str = Query(...), db: AsyncSession = Depends(get_d
     # Mock endpoint for demo - find user by email
     result = await db.execute(select(User).options(joinedload(User.tenant)).where(User.email == email))
     user = result.scalars().first()
-    if user:
-        user.tenant_name = user.tenant.name if user.tenant else "Unknown"
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Manually attach tenant_name if needed by Pydantic (though response model usually handles it via relationship if defined)
+    # But since UserResponse has tenant_name field which is not on User model directly (it's via relationship), 
+    # we need to ensure the Pydantic model can resolve it, or we construct a dict.
+    # UserResponse uses `from_attributes=True`, so it tries to access `user.tenant_name`.
+    # The current code tries to set `user.tenant_name`, which might fail if `user` is an SQLAlchemy object and not a dict (unless we use a property).
+    
+    # Better approach: 
+    tenant_name = user.tenant.name if user.tenant else "Unknown"
+    # We can rely on Pydantic's `from_attributes` if we add a property to the model, OR we can return a dict overlay.
+    # But for now, let's just do what the original code tried to do but handle the 404 first.
+    
+    # Original code:
+    # if user:
+    #    user.tenant_name = user.tenant.name if user.tenant else "Unknown"
+    # return user
+
+    # The issue was returning None when user is None.
+    
+    user.tenant_name = tenant_name
     return user
 
 @router.get("/{user_id}", response_model=UserResponse)

@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard
+from app.api.v1.endpoints import email, applications, email_services, users, smtp, templates, webhooks, logs, tenants, send_email, dashboard, auth
 
 api_router = APIRouter()
 
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(email.router, prefix="/email", tags=["emails"])
 api_router.include_router(applications.router, prefix="/applications", tags=["applications"])
 api_router.include_router(email_services.router, prefix="/email-services", tags=["email-services"])

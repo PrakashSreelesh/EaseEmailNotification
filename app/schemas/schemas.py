@@ -210,3 +210,16 @@ class APIKeyEmailSendRequest(BaseModel):
     to_email: EmailStr
     variables_data: dict = {}
     service_name: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    username: str
+    role: str
+    is_superadmin: bool
+    is_admin: bool
+    tenant_id: Optional[UUID4] = None
