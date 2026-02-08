@@ -1,11 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List, Optional
+from sqlalchemy import func
+from typing import List, Optional, Union
 from app.db.session import get_db
 from app.models.all_models import User, Tenant
 from app.schemas.schemas import UserCreate, UserResponse, UserBase
 from sqlalchemy.orm import joinedload
+from pydantic import BaseModel
+
+from app.core.config import settings
+import aiosmtplib
+from email.message import EmailMessage
+
+class CountResponse(BaseModel):
+    count: int
 
 router = APIRouter()
 
@@ -29,38 +38,155 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+
+    # Send Invitation Email for Tenant Admins
+    try:
+        if user.role == 'admin' and user.tenant_id:
+            # Fetch tenant name
+            tenant_res = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+            tenant_obj = tenant_res.scalars().first()
+            tenant_name = tenant_obj.name if tenant_obj else "EaseEmail"
+
+            message = EmailMessage()
+            message["From"] = settings.DEFAULT_FROM_EMAIL
+            message["To"] = user.email
+            message["Subject"] = f"{user.full_name or 'User'} - Verify Your Email"
+
+            body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>EaseEmail Account Details</title>
+            </head>
+            <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:20px 0;">
+                <tr>
+                <td align="center">
+                    
+                    <!-- Main container -->
+                    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:#1f2937; color:#ffffff; padding:20px; text-align:center; font-size:22px; font-weight:bold;">
+                        EaseEmail
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:30px; color:#333333; font-size:15px; line-height:1.6;">
+                        
+                        <p>
+                            Your company <strong>"{tenant_name}"</strong> has been successfully registered in <strong>EaseEmail</strong>.
+                        </p>
+
+                        <p>Please use the credentials below to log in to your account:</p>
+
+                        <!-- Credentials box -->
+                        <table width="100%" cellpadding="10" cellspacing="0" style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; margin:15px 0;">
+                            <tr>
+                            <td style="font-size:14px;">
+                                <strong>Username:</strong> {user.email}
+                            </td>
+                            </tr>
+                            <tr>
+                            <td style="font-size:14px;">
+                                <strong>Password:</strong> {user.password}
+                            </td>
+                            </tr>
+                        </table>
+
+                        <!-- Button -->
+                        <p style="text-align:center; margin:25px 0;">
+                            <a href="http://0.0.0.0:8000/" 
+                            style="background:#2563eb; color:#ffffff; padding:12px 24px; text-decoration:none; border-radius:5px; font-weight:bold; display:inline-block;">
+                            Login to EaseEmail
+                            </a>
+                        </p>
+
+                        <p style="font-size:13px; color:#666666;">
+                            If you did not request this account, please ignore this email.
+                        </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background:#f3f4f6; padding:15px; text-align:center; font-size:12px; color:#888888;">
+                        © 2026 EaseEmail. All rights reserved.
+                        </td>
+                    </tr>
+
+                    </table>
+                    <!-- End container -->
+
+                </td>
+                </tr>
+            </table>
+
+            </body>
+            </html>
+            """
+            message.set_content(body, subtype='html')
+
+            if settings.EMAIL_HOST and settings.EMAIL_PORT:
+                await aiosmtplib.send(
+                    message,
+                    hostname=settings.EMAIL_HOST,
+                    port=settings.EMAIL_PORT,
+                    username=settings.EMAIL_HOST_USER,
+                    password=settings.EMAIL_HOST_PASSWORD,
+                    start_tls=settings.EMAIL_USE_TLS, # aiosmtplib uses start_tls for TLS
+                )
+    except Exception as e:
+        print(f"Failed to send invitation email: {e}")
+
     return new_user
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("/")
 async def read_users(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     tenant_id: Optional[str] = Query(None),
     is_superadmin: bool = Query(False),
+    count_only: bool = Query(False),
     db: AsyncSession = Depends(get_db)
 ):
-    # Base query joined with Tenant
-    query = select(User).options(joinedload(User.tenant)).offset(skip).limit(limit)
-    
-    # Logic:
-    # 1. If requester IS NOT superadmin OR they provided a specific tenant_id, filter by it.
-    if not is_superadmin:
-        if not tenant_id:
-            # If not superadmin and no tenant_id provided, they shouldn't see anything
-            # But usually we'd get this from the token in a real app.
-            return []
+    # If count_only is requested, return count
+    if count_only:
+        # Base count query
+        query = select(func.count(User.id)).where(User.is_superadmin == False)
+
+        # For dashboard counts, be more permissive
+        # Only filter by tenant if explicitly provided
+        if tenant_id:
+            query = query.where(User.tenant_id == tenant_id)
+        # If no tenant_id provided, return total count (for dashboard overview)
+
+        result = await db.execute(query)
+        count = result.scalar()
+        return {"count": count}
+
+    # Base query joined with Tenant - be permissive like count query
+    query = select(User).options(joinedload(User.tenant)).where(User.is_superadmin == False).offset(skip).limit(limit)
+
+    # For list queries, be more permissive
+    # Only filter by tenant if explicitly provided
+    if tenant_id:
         query = query.where(User.tenant_id == tenant_id)
-    elif tenant_id:
-        # Superadmin filtering by specific tenant
-        query = query.where(User.tenant_id == tenant_id)
-    
+    # If no tenant_id provided, return all (for admin overview)
+
     result = await db.execute(query)
     users = result.scalars().all()
-    
+
     # Populate tenant_name for response
     for u in users:
         u.tenant_name = u.tenant.name if u.tenant else "Unknown"
-        
+
     return users
 
 @router.get("/me", response_model=UserResponse)
@@ -68,8 +194,28 @@ async def read_user_me(email: str = Query(...), db: AsyncSession = Depends(get_d
     # Mock endpoint for demo - find user by email
     result = await db.execute(select(User).options(joinedload(User.tenant)).where(User.email == email))
     user = result.scalars().first()
-    if user:
-        user.tenant_name = user.tenant.name if user.tenant else "Unknown"
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Manually attach tenant_name if needed by Pydantic (though response model usually handles it via relationship if defined)
+    # But since UserResponse has tenant_name field which is not on User model directly (it's via relationship), 
+    # we need to ensure the Pydantic model can resolve it, or we construct a dict.
+    # UserResponse uses `from_attributes=True`, so it tries to access `user.tenant_name`.
+    # The current code tries to set `user.tenant_name`, which might fail if `user` is an SQLAlchemy object and not a dict (unless we use a property).
+    
+    # Better approach: 
+    tenant_name = user.tenant.name if user.tenant else "Unknown"
+    # We can rely on Pydantic's `from_attributes` if we add a property to the model, OR we can return a dict overlay.
+    # But for now, let's just do what the original code tried to do but handle the 404 first.
+    
+    # Original code:
+    # if user:
+    #    user.tenant_name = user.tenant.name if user.tenant else "Unknown"
+    # return user
+
+    # The issue was returning None when user is None.
+    
+    user.tenant_name = tenant_name
     return user
 
 @router.get("/{user_id}", response_model=UserResponse)

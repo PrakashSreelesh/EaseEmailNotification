@@ -61,7 +61,7 @@
                         <div>
                             <p class="text-sm font-bold text-gray-400 mb-2 group-hover:text-blue-500 transition-colors">
                                 Standard Users</p>
-                            <h4 class="text-3xl font-black text-[#181C32]" id="statUsers">0</h4>
+                            <h4 class="text-3xl font-black text-[#181C32]" id="statUsers">•••</h4>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@
                         <div>
                             <p class="text-sm font-bold text-gray-400 mb-2 group-hover:text-cyan-500 transition-colors">
                                 Applications</p>
-                            <h4 class="text-3xl font-black text-[#181C32]" id="statApps">0</h4>
+                            <h4 class="text-3xl font-black text-[#181C32]" id="statApps">•••</h4>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-500">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +92,7 @@
                             <p
                                 class="text-sm font-bold text-gray-400 mb-2 group-hover:text-orange-500 transition-colors">
                                 SMTP Accounts</p>
-                            <h4 class="text-3xl font-black text-[#181C32]" id="statSMTP">0</h4>
+                            <h4 class="text-3xl font-black text-[#181C32]" id="statSMTP">•••</h4>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +108,7 @@
                             <p
                                 class="text-sm font-bold text-gray-400 mb-2 group-hover:text-purple-500 transition-colors">
                                 Templates</p>
-                            <h4 class="text-3xl font-black text-[#181C32]" id="statTemplates">0</h4>
+                            <h4 class="text-3xl font-black text-[#181C32]" id="statTemplates">•••</h4>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@
                 <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-[0.2em] mb-6">Email Analytics
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm border-b-4 border-b-indigo-500">
                         <div class="flex items-center justify-between mb-4">
                             <p class="text-sm font-bold text-gray-400">Emails Sent</p>
                             <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,7 +134,7 @@
                                     d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                             </svg>
                         </div>
-                        <h4 class="text-3xl font-black text-indigo-600">15,234</h4>
+                        <h4 class="text-3xl font-black text-indigo-600" id="statEmailsSent">•••</h4>
                     </div>
                     <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm border-b-4 border-b-cyan-500">
                         <div class="flex items-center justify-between mb-4">
@@ -144,7 +144,7 @@
                                     d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h4 class="text-3xl font-black text-cyan-600">14,891</h4>
+                        <h4 class="text-3xl font-black text-cyan-600" id="statEmailsDelivered">•••</h4>
                     </div>
                     <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm border-b-4 border-b-red-500">
                         <div class="flex items-center justify-between mb-4">
@@ -154,7 +154,7 @@
                                     d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"></path>
                             </svg>
                         </div>
-                        <h4 class="text-3xl font-black text-red-600">127</h4>
+                        <h4 class="text-3xl font-black text-red-600" id="statEmailsFailed">•••</h4>
                     </div>
                     <div
                         class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm border-b-4 border-b-orange-500">
@@ -165,7 +165,7 @@
                                     d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h4 class="text-3xl font-black text-orange-600">216</h4>
+                        <h4 class="text-3xl font-black text-orange-600" id="statEmailsPending">•••</h4>
                     </div>
                 </div>
             </div>
@@ -178,36 +178,8 @@
                         <a href="/logs" class="text-sm font-bold text-orange-500 hover:text-orange-600">View All</a>
                     </div>
                     <div class="space-y-6" id="activityList">
-                        <div class="flex items-start space-x-4">
-                            <div
-                                class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="flex-1 border-b border-gray-50 pb-4">
-                                <p class="text-sm font-bold text-gray-900 mb-1">500 emails sent</p>
-                                <p class="text-xs text-gray-400 font-medium">via Primary SMTP account</p>
-                                <p class="text-[10px] text-gray-300 font-bold mt-2 uppercase">2 HOURS AGO</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-4">
-                            <div
-                                class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="flex-1 border-b border-gray-50 pb-4">
-                                <p class="text-sm font-bold text-gray-900 mb-1">New Template Created</p>
-                                <p class="text-xs text-gray-400 font-medium">Welcome Onboarding Email</p>
-                                <p class="text-[10px] text-gray-300 font-bold mt-2 uppercase">5 HOURS AGO</p>
-                            </div>
-                        </div>
+                        <!-- Content loaded via API -->
+                        <p class="text-sm text-gray-400 text-center py-4">Loading stats...</p>
                     </div>
                 </div>
 
@@ -217,28 +189,31 @@
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <p class="text-sm font-bold text-gray-500">Delivery Rate</p>
-                                <p class="text-sm font-black text-gray-900">97.5%</p>
+                                <p class="text-sm font-black text-gray-900" id="deliveryRate">•••</p>
                             </div>
                             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-blue-500 h-full rounded-full" style="width: 97.5%"></div>
+                                <div class="bg-blue-500 h-full rounded-full" id="deliveryRateBar" style="width: 0%">
+                                </div>
                             </div>
                         </div>
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <p class="text-sm font-bold text-gray-500">Bounce Rate</p>
-                                <p class="text-sm font-black text-gray-900">1.2%</p>
+                                <p class="text-sm font-black text-gray-900" id="bounceRate">•••</p>
                             </div>
                             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-purple-500/30 h-full rounded-full" style="width: 1.2%"></div>
+                                <div class="bg-purple-500/30 h-full rounded-full" id="bounceRateBar" style="width: 0%">
+                                </div>
                             </div>
                         </div>
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <p class="text-sm font-bold text-gray-500">Open Rate</p>
-                                <p class="text-sm font-black text-gray-900">42.3%</p>
+                                <p class="text-sm font-black text-gray-900" id="openRate">•••</p>
                             </div>
                             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-indigo-900/40 h-full rounded-full" style="width: 42.3%"></div>
+                                <div class="bg-indigo-900/40 h-full rounded-full" id="openRateBar" style="width: 0%">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -250,26 +225,128 @@
     <script src="/static/js/sidebar.js"></script>
     <script>
         async function fetchStats() {
+            const token = localStorage.getItem('token') || '';
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
             try {
-                // Mock stats or fetch actual ones
-                const appsRes = await fetch('/api/v1/applications');
-                const apps = await appsRes.json();
-                document.getElementById('statApps').textContent = apps.length;
+                // For dashboard counts, don't apply strict tenant filtering
+                // Pass empty tenant_id to get total counts
+                const countParams = 'count_only=true&is_superadmin=false&tenant_id=';
 
-                const smtpRes = await fetch('/api/v1/smtp-accounts');
-                const smtps = await smtpRes.json();
-                document.getElementById('statSMTP').textContent = smtps.length;
+                // Fetch counts with authentication
+                const [appsRes, smtpRes, templateRes, usersRes] = await Promise.all([
+                    fetch(`/api/v1/applications?${countParams}`, { headers }),
+                    fetch(`/api/v1/smtp-accounts?${countParams}`, { headers }),
+                    fetch(`/api/v1/templates?${countParams}`, { headers }),
+                    fetch(`/api/v1/users?${countParams}`, { headers })
+                ]);
 
-                const templateRes = await fetch('/api/v1/templates');
-                const templates = await templateRes.json();
-                document.getElementById('statTemplates').textContent = templates.length;
+                const [apps, smtps, templates, users] = await Promise.all([
+                    appsRes.json(),
+                    smtpRes.json(),
+                    templateRes.json(),
+                    usersRes.json()
+                ]);
 
-                const usersRes = await fetch('/api/v1/users');
-                const users = await usersRes.json();
-                document.getElementById('statUsers').textContent = users.length;
+                document.getElementById('statApps').textContent = apps.count || 0;
+                document.getElementById('statSMTP').textContent = smtps.count || 0;
+                document.getElementById('statTemplates').textContent = templates.count || 0;
+                document.getElementById('statUsers').textContent = users.count || 0;
+
+                // Fetch email analytics
+                const emailStatsRes = await fetch('/api/v1/email-stats', { headers });
+                if (emailStatsRes.ok) {
+                    const emailStats = await emailStatsRes.json();
+                    // Update analytics cards
+                    document.getElementById('statEmailsSent').textContent = emailStats.sent.toLocaleString();
+                    document.getElementById('statEmailsDelivered').textContent = emailStats.delivered.toLocaleString();
+                    document.getElementById('statEmailsFailed').textContent = emailStats.failed.toString();
+                    document.getElementById('statEmailsPending').textContent = emailStats.pending.toString();
+                }
+
+                // Fetch recent activity
+                const activityRes = await fetch('/api/v1/recent-activity', { headers });
+                if (activityRes.ok) {
+                    const activities = await activityRes.json();
+                    updateRecentActivity(activities);
+                }
+
+                // Fetch quick stats
+                const quickStatsRes = await fetch('/api/v1/quick-stats', { headers });
+                if (quickStatsRes.ok) {
+                    const quickStats = await quickStatsRes.json();
+                    updateQuickStats(quickStats);
+                }
+
             } catch (e) {
                 console.error("Error fetching stats:", e);
+                // Show error states
+                const statElements = ['statApps', 'statSMTP', 'statTemplates', 'statUsers'];
+                statElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = 'Error';
+                });
             }
+        }
+
+        function updateRecentActivity(activities) {
+            const activityList = document.getElementById('activityList');
+            if (!activityList) return;
+
+            if (!activities || activities.length === 0) {
+                activityList.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No recent activity</p>';
+                return;
+            }
+
+            activityList.innerHTML = activities.map((activity, index) => {
+                const iconMap = {
+                    'mail': '<svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>',
+                    'file-text': '<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>',
+                    'package': '<svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>',
+                    'check-circle': '<svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                    'alert-circle': '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"></path></svg>',
+                    'clock': '<svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+                };
+
+                const icon = iconMap[activity.icon] || iconMap['mail'];
+                const borderClass = index < activities.length - 1 ? 'border-b border-gray-50 pb-4' : '';
+
+                return `
+                    <div class="flex items-start space-x-4 ${borderClass}">
+                        <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 shrink-0">
+                            ${icon}
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-gray-900 mb-1">${activity.title}</p>
+                            <p class="text-xs text-gray-400 font-medium">${activity.subtitle}</p>
+                            <p class="text-[10px] text-gray-300 font-bold mt-2 uppercase">${activity.time}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateQuickStats(quickStats) {
+            // Update delivery rate
+            const deliveryElement = document.getElementById('deliveryRate');
+            const deliveryBar = document.getElementById('deliveryRateBar');
+            if (deliveryElement) deliveryElement.textContent = `${quickStats.delivery_rate}%`;
+            if (deliveryBar) deliveryBar.style.width = `${Math.min(quickStats.delivery_rate, 100)}%`;
+
+            // Update bounce rate
+            const bounceElement = document.getElementById('bounceRate');
+            const bounceBar = document.getElementById('bounceRateBar');
+            if (bounceElement) bounceElement.textContent = `${quickStats.bounce_rate}%`;
+            if (bounceBar) bounceBar.style.width = `${Math.min(quickStats.bounce_rate, 100)}%`;
+
+            // Update open rate
+            const openElement = document.getElementById('openRate');
+            const openBar = document.getElementById('openRateBar');
+            if (openElement) openElement.textContent = `${quickStats.open_rate}%`;
+            if (openBar) openBar.style.width = `${Math.min(quickStats.open_rate, 100)}%`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -1,16 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
-from typing import List
+from sqlalchemy import func
+from typing import List, Optional, Union
 from app.schemas import schemas
 from app.models.all_models import Application, Tenant
 from app.db.session import get_db
+from pydantic import BaseModel
 import uuid
+
+class CountResponse(BaseModel):
+    count: int
 
 router = APIRouter()
 
 @router.post("/", response_model=schemas.ApplicationResponse)
 async def create_application(app: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if app.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == app.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+
     db_app = Application(
         name=app.name, 
         tenant_id=app.tenant_id, 
@@ -25,9 +36,39 @@ async def create_application(app: schemas.ApplicationCreate, db: Session = Depen
     await db.refresh(db_app)
     return db_app
 
-@router.get("/", response_model=List[schemas.ApplicationResponse])
-async def read_applications(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    result = await db.execute(select(Application).offset(skip).limit(limit))
+@router.get("/")
+async def read_applications(
+    skip: int = 0,
+    limit: int = 100,
+    count_only: bool = Query(False),
+    tenant_id: Optional[str] = Query(None),
+    is_superadmin: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    # If count_only is requested, return count
+    if count_only:
+        query = select(func.count(Application.id))
+
+        # For dashboard counts, be more permissive
+        # Only filter by tenant if explicitly provided
+        if tenant_id:
+            query = query.where(Application.tenant_id == tenant_id)
+        # If no tenant_id provided, return total count (for dashboard overview)
+
+        result = await db.execute(query)
+        count = result.scalar()
+        return {"count": count}
+
+    # Regular query - be permissive like count query
+    query = select(Application).offset(skip).limit(limit)
+
+    # For list queries, be more permissive
+    # Only filter by tenant if explicitly provided
+    if tenant_id:
+        query = query.where(Application.tenant_id == tenant_id)
+    # If no tenant_id provided, return all (for admin overview)
+
+    result = await db.execute(query)
     return result.scalars().all()
 
 @router.get("/{app_id}", response_model=schemas.ApplicationResponse)
@@ -55,13 +96,33 @@ async def update_application(app_id: str, app_update: schemas.ApplicationCreate,
     if not db_app:
         raise HTTPException(status_code=404, detail="Application not found")
     
+    # Update fields only if provided (though schema has defaults, we should be careful with tenant_id)
     db_app.name = app_update.name
-    db_app.tenant_id = app_update.tenant_id
+    
+    # Validate and update tenant_id only if it's different and valid
+    if app_update.tenant_id and app_update.tenant_id != db_app.tenant_id:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == app_update.tenant_id))
+        if not tenant_result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+        db_app.tenant_id = app_update.tenant_id
+        
     db_app.description = app_update.description
     db_app.status = app_update.status or db_app.status
     db_app.webhook_url = app_update.webhook_url
     db_app.api_key_expiry = app_update.api_key_expiry
     
+    await db.commit()
+    await db.refresh(db_app)
+    return db_app
+
+@router.post("/{app_id}/rotate-key", response_model=schemas.ApplicationResponse)
+async def rotate_api_key(app_id: str, db: Session = Depends(get_db)):
+    result = await db.execute(select(Application).where(Application.id == app_id))
+    db_app = result.scalars().first()
+    if not db_app:
+        raise HTTPException(status_code=404, detail="Application not found")
+        
+    db_app.api_key = str(uuid.uuid4())
     await db.commit()
     await db.refresh(db_app)
     return db_app

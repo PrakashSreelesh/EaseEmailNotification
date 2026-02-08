@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.future import select
-from typing import List
+from sqlalchemy import func
+from typing import List, Optional, Union
 from app.schemas import schemas
-from app.models.all_models import EmailTemplate, SMTPConfiguration
+from app.models.all_models import EmailTemplate, SMTPConfiguration, Tenant
 from app.db.session import get_db
+from pydantic import BaseModel
+
+class CountResponse(BaseModel):
+    count: int
 from jinja2 import Template
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,9 +19,16 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.TemplateResponse)
 async def create_template(template: schemas.TemplateCreate, db: Session = Depends(get_db)):
+    # Validate tenant if provided
+    if template.tenant_id:
+        result = await db.execute(select(Tenant).where(Tenant.id == template.tenant_id))
+        if not result.scalars().first():
+             raise HTTPException(status_code=404, detail="Tenant not found")
+    
     db_template = EmailTemplate(
         tenant_id=template.tenant_id,
         name=template.name,
+        category=template.category,
         subject_template=template.subject_template,
         body_template=template.body_template,
         sample_data=template.sample_data
@@ -26,9 +38,39 @@ async def create_template(template: schemas.TemplateCreate, db: Session = Depend
     await db.refresh(db_template)
     return db_template
 
-@router.get("/", response_model=List[schemas.TemplateResponse])
-async def read_templates(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    result = await db.execute(select(EmailTemplate).offset(skip).limit(limit))
+@router.get("/")
+async def read_templates(
+    skip: int = 0,
+    limit: int = 100,
+    count_only: bool = Query(False),
+    tenant_id: Optional[str] = Query(None),
+    is_superadmin: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    # If count_only is requested, return count
+    if count_only:
+        query = select(func.count(EmailTemplate.id))
+
+        # For dashboard counts, be more permissive
+        # Only filter by tenant if explicitly provided
+        if tenant_id:
+            query = query.where(EmailTemplate.tenant_id == tenant_id)
+        # If no tenant_id provided, return total count (for dashboard overview)
+
+        result = await db.execute(query)
+        count = result.scalar()
+        return {"count": count}
+
+    # Regular query - be permissive like count query
+    query = select(EmailTemplate)
+
+    # For list queries, be more permissive
+    # Only filter by tenant if explicitly provided
+    if tenant_id:
+        query = query.where(EmailTemplate.tenant_id == tenant_id)
+    # If no tenant_id provided, return all (for admin overview)
+
+    result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
 @router.get("/{template_id}", response_model=schemas.TemplateResponse)
@@ -57,6 +99,7 @@ async def update_template(template_id: str, template_update: schemas.TemplateCre
         raise HTTPException(status_code=404, detail="Template not found")
     
     db_template.name = template_update.name
+    db_template.category = template_update.category  # Added category update
     db_template.subject_template = template_update.subject_template
     db_template.body_template = template_update.body_template
     db_template.sample_data = template_update.sample_data

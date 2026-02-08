@@ -25,11 +25,11 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    tenant_id: UUID4
+    tenant_id: Optional[UUID4] = None
 
 class UserResponse(UserBase):
     id: UUID4
-    tenant_id: UUID4
+    tenant_id: Optional[UUID4] = None
     tenant_name: Optional[str] = None
     created_at: datetime
     
@@ -77,6 +77,7 @@ class SMTPConfigResponse(SMTPConfigBase):
 
 class TemplateBase(BaseModel):
     name: str
+    category: Optional[str] = "General"
     subject_template: str
     body_template: str
     sample_data: Optional[dict] = None
@@ -136,6 +137,7 @@ class ServiceConfigurationResponse(ServiceConfigurationBase):
 class EmailServiceBase(BaseModel):
     name: str
     description: Optional[str] = None
+    from_email: Optional[str] = None
     template_id: Optional[UUID4] = None
     status: Optional[str] = "active"
     created_by: Optional[str] = None
@@ -155,6 +157,7 @@ class EmailServiceResponse(BaseModel):
     id: UUID4
     name: str
     description: str = ""
+    from_email: Optional[str] = None
     status: str = "active"
     created_by: str = "System"
     created_at: datetime
@@ -207,3 +210,16 @@ class APIKeyEmailSendRequest(BaseModel):
     to_email: EmailStr
     variables_data: dict = {}
     service_name: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    username: str
+    role: str
+    is_superadmin: bool
+    is_admin: bool
+    tenant_id: Optional[UUID4] = None
