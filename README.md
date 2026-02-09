@@ -83,6 +83,8 @@ docker-compose build
 
 # optional -1
 docker-compose down
+# remove everythin
+docker-compose down -v
 # optional -2
 docker-compose build api worker
 
@@ -124,6 +126,27 @@ python3 verify_async_email.py
 # - Test failure scenarios
 
 ```
+
+---
+
+
+Why it happens:
+
+Old Celery workers from previous runs are still active
+When you run ./run_local.sh, it starts new workers
+Now you have duplicate workers competing for tasks
+Fix (Do this now):
+
+bash
+# 1. Stop current run_local.sh (CTRL+C in that terminal)
+# 2. Kill ALL Celery workers
+pkill -9 -f celery
+# 3. Verify clean
+ps aux | grep celery | grep -v grep
+# Should show nothing
+# 4. Restart
+./run_local.sh
+
 
 
 ---

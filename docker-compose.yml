@@ -12,7 +12,7 @@ services:
     container_name: easeemail-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-easeemail}
+      POSTGRES_DB: ${POSTGRES_DB:-easemail}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       # Performance tuning for containerized PostgreSQL

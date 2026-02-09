@@ -17,7 +17,8 @@ api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"]
 api_router.include_router(logs.router, prefix="/logs", tags=["logs"])
 api_router.include_router(tenants.router, prefix="/tenants", tags=["tenants"])
 api_router.include_router(send_email.router, prefix="/send", tags=["emails"])
-api_router.include_router(dashboard.router, prefix="", tags=["dashboard"])api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+api_router.include_router(dashboard.router, prefix="", tags=["dashboard"])
+api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 
 # Metrics endpoint
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])

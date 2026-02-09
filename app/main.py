@@ -61,7 +61,27 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def read_root(request: Request):
-    return RedirectResponse(url="/dashboard")
+    """
+    Root route - redirects based on authentication status.
+    - If authenticated (has access_token cookie): redirect to /dashboard
+    - If not authenticated: redirect to /login
+    """
+    # Check for access_token in cookies first
+    access_token = request.cookies.get("access_token")
+    
+    # If no cookie, check Authorization header (for API clients)
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.replace("Bearer ", "")
+    
+    # Redirect based on authentication status
+    if access_token:
+        # User is authenticated - go to dashboard
+        return RedirectResponse(url="/dashboard")
+    else:
+        # User is not authenticated - go to login
+        return RedirectResponse(url="/login")
 
 @app.get("/login")
 def login_page(request: Request):
